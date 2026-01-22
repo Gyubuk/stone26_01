@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>결과 - Round {{ d.round_no }}</title>
+</head>
+<body>
+  <h1>이번 선택의 결과입니다</h1>
+  <p>Round {{ d.round_no }} / {{ max_round }}</p>
+
+  <ul>
+    <li>선택: {{ d.get_decision_type_display }}</li>
+    {% if d.decision_type == "bid" %}
+      <li>입찰가: {{ d.bid_value }}</li>
+    {% endif %}
+    <li>결과: {{ d.get_outcome_display }}</li>
+    <li>지불 금액: {{ d.paid_price }}</li>
+  </ul>
+
+  <a href="/exp/round/{{ next_round }}/">다음 라운드로</a>
+</body>
+</html>

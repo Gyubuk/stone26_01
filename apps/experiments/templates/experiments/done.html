@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>실험 종료</title>
+</head>
+<body>
+  <h1>실험이 종료되었습니다. 감사합니다!</h1>
+  <p>참가자 코드: {{ participant.code }}</p>
+
+  <h3>요약(선택)</h3>
+  <ol>
+    {% for d in decisions %}
+      <li>
+        R{{ d.round_no }} - {{ d.get_decision_type_display }} / {{ d.get_outcome_display }}
+        (지불: {{ d.paid_price }})
+      </li>
+    {% endfor %}
+  </ol>
+
+  <a href="/">홈으로</a>
+</body>
+</html>
