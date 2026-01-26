@@ -1,22 +1,136 @@
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>결과 - Round {{ d.round_no }}</title>
-</head>
-<body>
-  <h1>이번 선택의 결과입니다</h1>
-  <p>Round {{ d.round_no }} / {{ max_round }}</p>
+{% extends 'base.html' %}
+{% load static %}
 
-  <ul>
-    <li>선택: {{ d.get_decision_type_display }}</li>
-    {% if d.decision_type == "bid" %}
-      <li>입찰가: {{ d.bid_value }}</li>
-    {% endif %}
-    <li>결과: {{ d.get_outcome_display }}</li>
-    <li>지불 금액: {{ d.paid_price }}</li>
-  </ul>
+{% block title %}라운드 {{ decision.round_no }} 결과{% endblock %}
 
-  <a href="/exp/round/{{ next_round }}/">다음 라운드로</a>
-</body>
-</html>
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'experiments/css/result.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card">
+        <div class="card-header bg-info text-white">
+            <h3><i class="fas fa-poll"></i> 라운드 {{ decision.round_no }} 결과</h3>
+            <p class="mb-0">라운드 {{ decision.round_no }} / {{ max_round }}</p>
+        </div>
+        <div class="card-body">
+            
+            {% if decision.outcome == 'bought' %}
+                <!-- 즉시구매 -->
+                <div class="result-card result-success">
+                    <div class="result-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h2 class="result-title">즉시구매 완료!</h2>
+                    <div class="result-details">
+                        <div class="detail-item">
+                            <span class="detail-label">선택</span>
+                            <span class="detail-value">{{ decision.get_decision_type_display }}</span>
+                        </div>
+                        <div class="detail-item highlight">
+                            <span class="detail-label">지불 금액</span>
+                            <span class="detail-value">{{ decision.paid_price|floatformat:0 }}원</span>
+                        </div>
+                    </div>
+                    <p class="result-message">상품을 성공적으로 구매하셨습니다!</p>
+                </div>
+
+            {% elif decision.outcome == 'win' %}
+                <!-- 낙찰 -->
+                <div class="result-card result-success">
+                    <div class="result-icon">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <h2 class="result-title">낙찰!</h2>
+                    <div class="result-details">
+                        <div class="detail-item">
+                            <span class="detail-label">선택</span>
+                            <span class="detail-value">{{ decision.get_decision_type_display }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">입찰가</span>
+                            <span class="detail-value">{{ decision.bid_value|floatformat:0 }}원</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">시장가격</span>
+                            <span class="detail-value">{{ decision.market_price|floatformat:0 }}원</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">수수료</span>
+                            <span class="detail-value">{{ decision.c|floatformat:0 }}원</span>
+                        </div>
+                        <div class="detail-item highlight">
+                            <span class="detail-label">총 지불 금액</span>
+                            <span class="detail-value">{{ decision.paid_price|floatformat:0 }}원</span>
+                        </div>
+                    </div>
+                    <p class="result-message">
+                        <i class="fas fa-info-circle"></i> 
+                        입찰가가 시장가격보다 높아 낙찰되었습니다!
+                    </p>
+                </div>
+
+            {% elif decision.outcome == 'lose' %}
+                <!-- 유찰 -->
+                <div class="result-card result-fail">
+                    <div class="result-icon">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <h2 class="result-title">유찰</h2>
+                    <div class="result-details">
+                        <div class="detail-item">
+                            <span class="detail-label">선택</span>
+                            <span class="detail-value">{{ decision.get_decision_type_display }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">입찰가</span>
+                            <span class="detail-value">{{ decision.bid_value|floatformat:0 }}원</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">시장가격</span>
+                            <span class="detail-value">{{ decision.market_price|floatformat:0 }}원</span>
+                        </div>
+                        <div class="detail-item highlight">
+                            <span class="detail-label">지불 금액</span>
+                            <span class="detail-value">0원</span>
+                        </div>
+                    </div>
+                    <p class="result-message">
+                        <i class="fas fa-info-circle"></i> 
+                        입찰가가 시장가격보다 낮아 유찰되었습니다.
+                    </p>
+                    {% if decision.round_no < max_round %}
+                        <div class="alert alert-info mt-3">
+                            <strong>다음 라운드에서 다시 시도하세요!</strong>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning mt-3">
+                            <strong>마지막 라운드였습니다.</strong>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            <!-- 다음 버튼 -->
+            {% if show_next_button %}
+                <div class="text-center mt-4">
+                    {% if next_url == 'experiments:done' %}
+                        <a href="{% url next_url %}" class="btn btn-primary btn-lg btn-next">
+                            {{ next_button_text }} <i class="fas fa-arrow-right"></i>
+                        </a>
+                    {% else %}
+                        <a href="{% url 'experiments:round' next_round_number %}" class="btn btn-primary btn-lg btn-next">
+                            {{ next_button_text }} <i class="fas fa-arrow-right"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'experiments/js/result.js' %}"></script>
+{% endblock %}

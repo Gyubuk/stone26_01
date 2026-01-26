@@ -1,91 +1,196 @@
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>Round {{ round_no }}</title>
-</head>
-<body>
-  <h1>경매 참여 화면</h1>
-  <p>Round {{ round_no }} / {{ max_round }}</p>
+{% extends 'base.html' %}
+{% load static %}
 
-  <ul>
-    <li>즉시구매가 Ps: {{ Ps }}</li>
-    <li>최저입찰가 k: {{ k }}</li>
-    <li>수수료 c(입찰 낙찰 시): {{ c }}</li>
-  </ul>
+{% block title %}라운드 {{ round_no }}{% endblock %}
 
-  {% if error %}
-    <p style="color:red;">{{ error }}</p>
-  {% endif %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'experiments/css/round.css' %}">
+{% endblock %}
 
-  <form method="POST" id="auctionForm">
-    {% csrf_token %}
+{% block content %}
+<div class="container mt-5">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h3><i class="fas fa-gavel"></i> 경매 참여 화면</h3>
+            <p class="mb-0">라운드 {{ round_no }} / {{ max_round }}</p>
+        </div>
+        <div class="card-body">
+            <!-- 에러 메시지 -->
+            {% if error %}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-triangle"></i> {{ error }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            {% endif %}
 
-    <h3>선택</h3>
-    <button type="submit" name="decision" value="buy">즉시구매</button>
+            <!-- 상품 정보 -->
+            <div class="alert alert-info">
+                <h5><i class="fas fa-box"></i> 상품 정보</h5>
+                <p class="mb-0">한정판 스니커즈</p>
+            </div>
 
-    <hr>
+            <!-- 가격 조건 -->
+            <div class="row mb-4">
+                <div class="col-md-4 mb-3">
+                    <div class="card border-success">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted">즉시구매가 (Ps)</h6>
+                            <h2 class="text-success mb-0">{{ Ps|floatformat:0 }}</h2>
+                            <small class="text-muted">원</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card border-warning">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted">최저입찰가 (k)</h6>
+                            <h2 class="text-warning mb-0">{{ k|floatformat:0 }}</h2>
+                            <small class="text-muted">원</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card border-danger">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted">수수료 (c)</h6>
+                            <h2 class="text-danger mb-0">{{ c|floatformat:0 }}</h2>
+                            <small class="text-muted">원 (낙찰 시)</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-    <h3>입찰</h3>
+            <form method="POST" action="{% url 'experiments:make_choice' %}" id="auctionForm">
+                {% csrf_token %}
 
-    <!-- 현재 값 표시 -->
-    <p>
-      현재 입찰가:
-      <b id="bidDisplay">{{ default_bid }}</b>
-    </p>
+                <div class="row">
+                    <!-- 즉시구매 섹션 -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card border-success card-equal-height">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0"><i class="fas fa-shopping-cart"></i> 즉시구매</h5>
+                            </div>
+                            <div class="card-body d-flex flex-column">
+                                <p class="flex-grow-1">
+                                    바로 상품을 받고 <strong class="text-success">{{ Ps|floatformat:0 }}원</strong>을 지불합니다.
+                                </p>
+                                <button type="submit" name="decision" value="buy" 
+                                        class="btn btn-success btn-lg btn-block">
+                                    <i class="fas fa-check-circle"></i> 즉시구매 하기
+                                </button>
+                            </div>
+                        </div>
+                    </div>
 
-    <!-- 서버로 보내는 실제 값 -->
-    <input type="hidden" name="bid_value" id="bidValue" value="{{ default_bid }}">
+                    <!-- 입찰 섹션 -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card border-primary card-equal-height">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0"><i class="fas fa-gavel"></i> 입찰</h5>
+                            </div>
+                            <div class="card-body">
+                                <!-- 현재 입찰가 표시 -->
+                                <div class="alert alert-secondary text-center mb-3">
+                                    <h6 class="text-muted mb-1">현재 입찰가</h6>
+                                    <h2 class="mb-0">
+                                        <span id="bidDisplay">{{ default_bid|floatformat:0 }}</span>
+                                        <small class="text-muted">원</small>
+                                    </h2>
+                                </div>
 
-    <!-- 스텝퍼 버튼 -->
-    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-      <button type="button" data-delta="-10000">-10,000</button>
-      <button type="button" data-delta="-1000">-1,000</button>
-      <button type="button" data-delta="1000">+1,000</button>
-      <button type="button" data-delta="10000">+10,000</button>
+                                <!-- 서버로 보내는 실제 값 -->
+                                <input type="hidden" name="bid_value" id="bidValue" value="{{ default_bid }}">
+
+                                <!-- 스텝퍼 버튼 -->
+                                <div class="mb-3">
+                                    <div class="row mb-2">
+                                        <div class="col-6">
+                                            <button type="button" class="btn btn-outline-danger btn-block stepper-btn" 
+                                                    data-delta="-10000">
+                                                <i class="fas fa-minus-circle"></i> 10,000
+                                            </button>
+                                        </div>
+                                        <div class="col-6">
+                                            <button type="button" class="btn btn-outline-success btn-block stepper-btn" 
+                                                    data-delta="10000">
+                                                <i class="fas fa-plus-circle"></i> 10,000
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <button type="button" class="btn btn-outline-danger btn-sm btn-block stepper-btn" 
+                                                    data-delta="-1000">
+                                                <i class="fas fa-minus"></i> 1,000
+                                            </button>
+                                        </div>
+                                        <div class="col-6">
+                                            <button type="button" class="btn btn-outline-success btn-sm btn-block stepper-btn" 
+                                                    data-delta="1000">
+                                                <i class="fas fa-plus"></i> 1,000
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 범위 안내 -->
+                                <div class="alert alert-light small text-center mb-3">
+                                    <i class="fas fa-info-circle"></i> 
+                                    범위: <strong>{{ k|floatformat:0 }}</strong> ~ <strong>{{ Ps|floatformat:0 }}</strong>원
+                                    <br>
+                                    단위: <strong>{{ step|floatformat:0 }}</strong>원
+                                </div>
+
+                                <!-- 입찰 제출 버튼 -->
+                                <button type="submit" name="decision" value="bid" 
+                                        class="btn btn-primary btn-lg btn-block">
+                                    <i class="fas fa-gavel"></i> 입찰하기
+                                </button>
+
+                                <!-- 입찰 안내 -->
+                                <div class="mt-3 small text-muted">
+                                    <i class="fas fa-lightbulb"></i> 
+                                    낙찰 시: <strong>입찰가 + {{ c|floatformat:0 }}원</strong> 지불<br>
+                                    유찰 시: 다음 라운드로 진행
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <!-- 추가 안내 -->
+            <div class="alert alert-light mt-3">
+                <h6><i class="fas fa-question-circle"></i> 안내사항</h6>
+                <ul class="mb-0 small">
+                    <li><strong>즉시구매:</strong> 즉시구매가(Ps)를 지불하고 바로 상품을 받습니다.</li>
+                    <li><strong>입찰:</strong> 입찰가를 설정하여 경매에 참여합니다.
+                        <ul>
+                            <li>낙찰 시: 입찰가 + 수수료(c)를 지불하고 상품을 받습니다.</li>
+                            <li>유찰 시: 다음 라운드로 진행됩니다 (최대 {{ max_round }}회).</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
     </div>
+</div>
 
-    <p style="margin-top:10px; color:#666;">
-      범위: {{ k }} ~ {{ Ps }} / 단위: {{ step }}
-    </p>
+<!-- 토스트 알림 컨테이너 -->
+<div id="toastContainer" class="toast-container"></div>
+{% endblock %}
 
-    <button type="submit" name="decision" value="bid">입찰하기</button>
-  </form>
-
-  <script>
-    (function(){
-      const min = Number("{{ k }}");
-      const max = Number("{{ Ps }}");
-      const step = Number("{{ step }}");
-
-      const display = document.getElementById("bidDisplay");
-      const input = document.getElementById("bidValue");
-      const buttons = document.querySelectorAll("button[data-delta]");
-
-      function clampAndSnap(v){
-        // step에 맞추기
-        v = Math.round(v / step) * step;
-        // 범위 제한
-        v = Math.max(min, Math.min(max, v));
-        return v;
-      }
-
-      function setValue(v){
-        const vv = clampAndSnap(v);
-        input.value = String(vv);
-        display.textContent = vv.toLocaleString();
-      }
-
-      buttons.forEach(btn => {
-        btn.addEventListener("click", () => {
-          const delta = Number(btn.getAttribute("data-delta"));
-          setValue(Number(input.value) + delta);
-        });
-      });
-
-      // 초기 표시
-      setValue(Number(input.value));
-    })();
-  </script>
-</body>
-</html>
+{% block extra_js %}
+<script>
+    // Django 템플릿 변수를 JS로 전달
+    window.AUCTION_CONFIG = {
+        min: Number("{{ k }}"),
+        max: Number("{{ Ps }}"),
+        step: Number("{{ step }}"),
+        commission: Number("{{ c }}")
+    };
+</script>
+<script src="{% static 'experiments/js/round.js' %}"></script>
+{% endblock %}

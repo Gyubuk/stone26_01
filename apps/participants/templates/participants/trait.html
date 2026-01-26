@@ -1,48 +1,228 @@
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>성향/동의</title>
-</head>
-<body>
-  <h1>성향 수집 + 동의</h1>
+{% extends 'base.html' %}
+{% load static %}
 
-  {% if error %}
-    <p style="color:red;">{{ error }}</p>
-  {% endif %}
+{% block title %}참가자 정보 입력{% endblock %}
 
-  <form method="POST">
-    {% csrf_token %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'participants/css/trait.css' %}">
+{% endblock %}
 
-    <p>위험선호(1문항)</p>
-    <select name="risk" required>
-      <option value="">선택</option>
-      <option value="safe">안정적 선택 선호</option>
-      <option value="risky">위험 감수 선택 선호</option>
-    </select>
+{% block content %}
+<div class="container mt-5">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h3><i class="fas fa-user-check"></i> 실험 참여 정보 입력</h3>
+            <p class="mb-0">실험 시작 전 몇 가지 질문에 답해주세요 (약 2~3분 소요)</p>
+        </div>
+        <div class="card-body">
+            <!-- 에러 메시지 -->
+            {% if error %}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-triangle"></i> {{ error }}
+                <button type="button" class="close" data-dismiss="alert">
+                    <span>&times;</span>
+                </button>
+            </div>
+            {% endif %}
 
-    <p>손실회피(1문항)</p>
-    <select name="loss" required>
-      <option value="">선택</option>
-      <option value="low">낮음</option>
-      <option value="high">높음</option>
-    </select>
+            <form method="POST" id="traitForm">
+                {% csrf_token %}
 
-    <p>리셀/경매 경험 여부</p>
-    <select name="exp" required>
-      <option value="">선택</option>
-      <option value="yes">있음</option>
-      <option value="no">없음</option>
-    </select>
+                <!-- 1. 구매 희망 상품 -->
+                <div class="question-section">
+                    <h5 class="question-title">
+                        <span class="question-number">1</span>
+                        이번 실험에서 구매를 가정할 상품을 선택해주세요
+                    </h5>
+                    <div class="form-group">
+                        <div class="custom-radio-group">
+                            <label class="custom-radio">
+                                <input type="radio" name="product" value="sneakers" required>
+                                <span class="radio-content">
+                                    <i class="fas fa-shoe-prints"></i>
+                                    <strong>한정판 스니커즈</strong>
+                                    <small>Nike Dunk, Jordan 시리즈 등</small>
+                                </span>
+                            </label>
+                            <label class="custom-radio">
+                                <input type="radio" name="product" value="concert" required>
+                                <span class="radio-content">
+                                    <i class="fas fa-music"></i>
+                                    <strong>콘서트/공연 티켓</strong>
+                                    <small>인기 아이돌, 해외 아티스트 등</small>
+                                </span>
+                            </label>
+                            <label class="custom-radio">
+                                <input type="radio" name="product" value="game" required>
+                                <span class="radio-content">
+                                    <i class="fas fa-gamepad"></i>
+                                    <strong>한정판 게임/피규어</strong>
+                                    <small>PS5 한정판, 닌텐도 한정판 등</small>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
 
-    <p>
-      <label>
-        <input type="checkbox" name="consent">
-        실험 참여에 동의합니다(필수)
-      </label>
-    </p>
+                <!-- 2. 예상 가격 -->
+                <div class="question-section">
+                    <h5 class="question-title">
+                        <span class="question-number">2</span>
+                        위에서 선택한 상품의 일반적인 시장 가격은 얼마라고 생각하시나요?
+                    </h5>
+                    <div class="form-group">
+                        <div class="input-group input-group-lg">
+                            <input type="number" 
+                                   class="form-control" 
+                                   name="expected_price" 
+                                   id="expectedPrice"
+                                   placeholder="예: 20"
+                                   min="5" 
+                                   max="100" 
+                                   required>
+                            <div class="input-group-append">
+                                <span class="input-group-text">만원</span>
+                            </div>
+                        </div>
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle"></i> 
+                            대략적인 가격대를 입력해주세요 (5~100만원)
+                        </small>
+                    </div>
+                </div>
+                <!-- 3. 위험성향 -->
+                <div class="question-section">
+                    <h5 class="question-title">
+                        <span class="question-number">3</span>
+                        위험성향 측정
+                    </h5>
+                    <div class="scenario-box">
+                        <p class="scenario-text">
+                            1만원으로 복권을 살 수 있습니다. 어느 것을 선택하시겠습니까?
+                        </p>
+                    </div>
+                    <div class="form-group">
+                        <div class="simple-choice-group">
+                            <label class="simple-choice">
+                                <input type="radio" name="risk" value="1" required>
+                                <span class="choice-content">
+                                    <i class="fas fa-shield-alt"></i>
+                                    <strong>복권 A</strong>
+                                    <small>확실하게 1만원</small>
+                                </span>
+                            </label>
+                            <label class="simple-choice">
+                                <input type="radio" name="risk" value="2" required>
+                                <span class="choice-content">
+                                    <i class="fas fa-balance-scale"></i>
+                                    <strong>복권 B</strong>
+                                    <small>10% 확률로 10만원</small>
+                                </span>
+                            </label>
+                            <label class="simple-choice">
+                                <input type="radio" name="risk" value="3" required>
+                                <span class="choice-content">
+                                    <i class="fas fa-dice"></i>
+                                    <strong>복권 C</strong>
+                                    <small>1% 확률로 100만원</small>
+                                </span>
+                            </label>
+                        </div>
+                        <small class="form-text text-muted text-center mt-3">
+                            A: 위험회피형 | B: 중립형 | C: 위험선호형
+                        </small>
+                    </div>
+                </div>
 
-    <button type="submit">다음으로</button>
-  </form>
-</body>
-</html>
+                <!-- 4. 손실회피 -->
+                <div class="question-section">
+                    <h5 class="question-title">
+                        <span class="question-number">4</span>
+                        손실회피 측정
+                    </h5>
+                    <div class="scenario-box">
+                        <p class="scenario-text">
+                            다음 두 상황 중 하나를 선택해야 합니다. 어느 쪽을 선택하시겠습니까?
+                        </p>
+                    </div>
+                    <div class="form-group">
+                        <div class="simple-choice-group">
+                            <label class="simple-choice-wide">
+                                <input type="radio" name="loss" value="1" required>
+                                <span class="choice-content">
+                                    <strong>상황 A</strong>
+                                    <p>확실하게 5만원을 받는다</p>
+                                </span>
+                            </label>
+                            <label class="simple-choice-wide">
+                                <input type="radio" name="loss" value="2" required>
+                                <span class="choice-content">
+                                    <strong>상황 B</strong>
+                                    <p>동전 던지기 - 앞면: 10만원 받기 / 뒷면: 3만원 잃기</p>
+                                </span>
+                            </label>
+                        </div>
+                        <small class="form-text text-muted text-center mt-3">
+                            A: 손실회피 강함 | B: 손실회피 약함
+                        </small>
+                    </div>
+                </div>
+
+                <!-- 5. 경매 경험 -->
+                <div class="question-section">
+                    <h5 class="question-title">
+                        <span class="question-number">5</span>
+                        온라인 경매나 한정판 리셀 구매 경험이 있으신가요?
+                    </h5>
+                    <div class="form-group">
+                        <div class="btn-group btn-group-toggle w-100" data-toggle="buttons">
+                            <label class="btn btn-outline-primary btn-lg">
+                                <input type="radio" name="exp" value="yes" required> 있다
+                            </label>
+                            <label class="btn btn-outline-primary btn-lg">
+                                <input type="radio" name="exp" value="no" required> 없다
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. 실험 동의 -->
+                <div class="question-section">
+                    <div class="consent-box">
+                        <h5><i class="fas fa-file-contract"></i> 실험 참여 동의</h5>
+                        <div class="consent-content">
+                            <ul>
+                                <li>본 실험은 연구 목적으로만 사용됩니다</li>
+                                <li>수집된 데이터는 익명으로 처리되며 개인정보는 보호됩니다</li>
+                                <li>실험 도중 언제든지 참여를 중단할 수 있습니다</li>
+                                <li>실험 소요 시간은 약 10~15분입니다</li>
+                            </ul>
+                        </div>
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" 
+                                   class="custom-control-input" 
+                                   id="consent" 
+                                   name="consent" 
+                                   required>
+                            <label class="custom-control-label" for="consent">
+                                <strong>위 내용을 확인했으며, 실험 참여에 동의합니다 (필수)</strong>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 제출 버튼 -->
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg btn-submit">
+                        <i class="fas fa-arrow-right"></i> 실험 시작하기
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'participants/js/trait.js' %}"></script>
+{% endblock %}

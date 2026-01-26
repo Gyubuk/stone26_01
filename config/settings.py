@@ -121,3 +121,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = "static/"
+
+# Media files (파일 업로드용, 선택사항)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
