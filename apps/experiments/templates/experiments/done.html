@@ -1,23 +1,261 @@
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>실험 종료</title>
-</head>
-<body>
-  <h1>실험이 종료되었습니다. 감사합니다!</h1>
-  <p>참가자 코드: {{ participant.code }}</p>
+{% extends 'base.html' %}
+{% load static %}
 
-  <h3>요약(선택)</h3>
-  <ol>
-    {% for d in decisions %}
-      <li>
-        R{{ d.round_no }} - {{ d.get_decision_type_display }} / {{ d.get_outcome_display }}
-        (지불: {{ d.paid_price }})
-      </li>
-    {% endfor %}
-  </ol>
+{% block title %}실험 종료{% endblock %}
 
-  <a href="/">홈으로</a>
-</body>
-</html>
+{% block extra_css %}
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Noto Sans KR', sans-serif; }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes bounceIn {
+    0%   { opacity: 0; transform: scale(0.4); }
+    55%  { transform: scale(1.08); }
+    75%  { transform: scale(0.95); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  .fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
+  .bounce-in  { animation: bounceIn 0.6s ease-out forwards; }
+  .delay-1 { animation-delay: 0.1s; opacity: 0; }
+  .delay-2 { animation-delay: 0.2s; opacity: 0; }
+  .delay-3 { animation-delay: 0.3s; opacity: 0; }
+  .delay-4 { animation-delay: 0.4s; opacity: 0; }
+
+  /* 아코디언 */
+  .accordion-content { display: none; }
+  .accordion-content.open { display: block; }
+  .accordion-icon { transition: transform 0.2s ease; }
+  .accordion-btn.open .accordion-icon { transform: rotate(180deg); }
+
+  /* 코드 복사 */
+  .code-box { cursor: pointer; transition: background 0.15s; }
+  .code-box:hover { background: #eff6ff; }
+
+  /* 스크롤바 */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+  /* 결과 뱃지 */
+  .badge-win  { background:#dcfce7; color:#15803d; }
+  .badge-lose { background:#fef9c3; color:#a16207; }
+  .badge-buy  { background:#dbeafe; color:#1d4ed8; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 pb-20" style="font-family: 'Noto Sans KR', sans-serif;">
+
+  <!-- 헤더 -->
+  <div class="bg-white border-b border-gray-200 py-4 px-6 flex items-center shadow-sm">
+    <div class="flex items-center gap-2 text-gray-700 font-bold">
+      <i class="fas fa-box text-gray-400 text-sm"></i>
+      <span class="text-sm sm:text-base">온라인 경매 상황에서의 구매 의사결정 실험</span>
+    </div>
+    <div class="ml-2 text-xs text-gray-400 hidden sm:block">MRA Lab @ SSU</div>
+  </div>
+
+  <div class="max-w-2xl mx-auto px-4 pt-10">
+
+    <!-- 완료 아이콘 + 타이틀 -->
+    <div class="text-center mb-8 fade-in-up">
+      <div class="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-5 bounce-in">
+        <i class="fas fa-flag-checkered text-emerald-500 text-4xl"></i>
+      </div>
+      <h1 class="text-3xl font-black text-gray-900 mb-2">실험 종료</h1>
+      <p class="text-gray-500 text-sm">참여해주셔서 감사합니다!</p>
+    </div>
+
+    <!-- 참가자 코드 -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6 fade-in-up delay-1">
+      <div class="bg-gray-50/50 px-6 py-4 border-b border-gray-100">
+        <p class="text-xs text-gray-400 font-bold uppercase tracking-wide">참가자 코드</p>
+      </div>
+      <div class="px-6 py-5">
+        <div class="code-box bg-gray-50 rounded-xl px-5 py-4 flex items-center justify-between"
+             onclick="copyCode(this)" title="클릭하여 복사">
+          <code class="text-sm font-mono text-gray-700 break-all">{{ participant.code }}</code>
+          <i class="fas fa-copy text-gray-400 ml-3 shrink-0"></i>
+        </div>
+        <p class="text-xs text-gray-400 mt-2 text-center">클릭하여 코드를 복사하세요</p>
+      </div>
+    </div>
+
+    <!-- 총 예상 지불액 -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6 fade-in-up delay-2">
+      <div class="bg-gray-50/50 px-6 py-4 border-b border-gray-100">
+        <p class="text-xs text-gray-400 font-bold uppercase tracking-wide">총 예상 지불액</p>
+      </div>
+      <div class="px-6 py-8 text-center">
+        <p class="text-5xl font-black text-gray-900">
+          {{ total_paid|floatformat:0 }}<span class="text-2xl font-medium text-gray-500 ml-1">원</span>
+        </p>
+        <p class="text-xs text-gray-400 mt-3">전체 {{ max_exp }}회 실험 합산</p>
+      </div>
+    </div>
+
+    <!-- 수수료별 요약 -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6 fade-in-up delay-3">
+      <div class="bg-gray-50/50 px-6 py-4 border-b border-gray-100">
+        <p class="text-xs text-gray-400 font-bold uppercase tracking-wide">수수료별 요약</p>
+      </div>
+      <div class="divide-y divide-gray-100">
+        {% for summary in type_summaries %}
+        <div class="px-6 py-4 flex items-center justify-between">
+          <div>
+            <p class="font-bold text-gray-900 text-sm">수수료 {{ summary.c|floatformat:0 }}원</p>
+            <p class="text-xs text-gray-400 mt-0.5">{{ summary.count }}회 완료</p>
+          </div>
+          <div class="text-right">
+            <p class="text-xs text-gray-400 mb-0.5">평균 지불액</p>
+            <p class="font-black text-gray-900">{{ summary.avg_paid|floatformat:0 }}원</p>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- 상세 결과 아코디언 -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-8 fade-in-up delay-4">
+      <div class="bg-gray-50/50 px-6 py-4 border-b border-gray-100">
+        <p class="text-xs text-gray-400 font-bold uppercase tracking-wide">상세 결과</p>
+      </div>
+      <div class="divide-y divide-gray-100">
+        {% for summary in exp_summaries %}
+        <div>
+          <!-- 아코디언 헤더 -->
+          <button type="button"
+                  class="accordion-btn w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left"
+                  onclick="toggleAccordion(this)">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
+                <span class="text-xs font-black text-gray-500">{{ summary.exp_no }}</span>
+              </div>
+              <div>
+                <p class="font-bold text-gray-900 text-sm">실험 {{ summary.exp_no }}</p>
+                <p class="text-xs text-gray-400">
+                  수수료 {{ summary.c|floatformat:0 }}원 &middot;
+                  지불 <span class="font-bold text-gray-600">{{ summary.paid|floatformat:0 }}원</span>
+                </p>
+              </div>
+            </div>
+            <i class="fas fa-chevron-down accordion-icon text-gray-400 text-sm shrink-0"></i>
+          </button>
+
+          <!-- 아코디언 내용 -->
+          <div class="accordion-content">
+            <div class="px-6 pb-4">
+              <div class="rounded-xl overflow-hidden border border-gray-100">
+                <table class="w-full text-sm">
+                  <thead>
+                    <tr class="bg-gray-50">
+                      <th class="px-4 py-2.5 text-left text-xs font-bold text-gray-400 uppercase">라운드</th>
+                      <th class="px-4 py-2.5 text-center text-xs font-bold text-gray-400 uppercase">선택</th>
+                      <th class="px-4 py-2.5 text-right text-xs font-bold text-gray-400 uppercase">입찰가</th>
+                      <th class="px-4 py-2.5 text-center text-xs font-bold text-gray-400 uppercase">결과</th>
+                      <th class="px-4 py-2.5 text-right text-xs font-bold text-gray-400 uppercase">지불액</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-50">
+                    {% for d in summary.decisions %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                      <td class="px-4 py-3 font-medium text-gray-700">{{ d.round_no }}</td>
+                      <td class="px-4 py-3 text-center">
+                        {% if d.decision_type == 'buy' %}
+                          <span class="badge-buy px-2 py-0.5 rounded-full text-xs font-bold">즉시구매</span>
+                        {% else %}
+                          <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs font-bold">입찰</span>
+                        {% endif %}
+                      </td>
+                      <td class="px-4 py-3 text-right text-gray-600">
+                        {% if d.bid_value %}{{ d.bid_value|floatformat:0 }}원{% else %}-{% endif %}
+                      </td>
+                      <td class="px-4 py-3 text-center">
+                        {% if d.outcome == 'bought' %}
+                          <span class="badge-win px-2 py-0.5 rounded-full text-xs font-bold">즉시구매</span>
+                        {% elif d.outcome == 'win' %}
+                          <span class="badge-win px-2 py-0.5 rounded-full text-xs font-bold">낙찰</span>
+                        {% elif d.outcome == 'lose' %}
+                          <span class="badge-lose px-2 py-0.5 rounded-full text-xs font-bold">유찰</span>
+                        {% endif %}
+                      </td>
+                      <td class="px-4 py-3 text-right font-bold text-gray-900">
+                        {{ d.paid_price|floatformat:0 }}원
+                      </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                      <td colspan="5" class="px-4 py-4 text-center text-gray-400 text-xs">기록 없음</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- 감사 메시지 -->
+    <div class="bg-gray-50 border border-gray-200 rounded-2xl px-6 py-6 text-center mb-6 fade-in-up delay-4">
+      <i class="fas fa-heart text-red-400 text-xl mb-3 block"></i>
+      <p class="font-bold text-gray-800 mb-1">실험에 참여해주셔서 감사합니다!</p>
+      <p class="text-gray-500 text-sm">수집된 데이터는 연구 목적으로만 사용됩니다.</p>
+    </div>
+
+    <!-- 홈으로 버튼 -->
+    <div class="fade-in-up delay-4">
+      <a href="{% url 'core:home' %}"
+         class="w-full py-4 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl border border-gray-300 flex items-center justify-center gap-2 text-base transition-all">
+        <i class="fas fa-home text-sm"></i>
+        홈으로
+      </a>
+    </div>
+
+  </div>
+</div>
+
+<!-- 복사 완료 토스트 -->
+<div id="copyToast"
+     class="hidden fixed top-5 right-5 bg-white border border-gray-200 rounded-xl shadow-lg px-4 py-3 flex items-center gap-3 z-50 transition-all">
+  <i class="fas fa-check-circle text-emerald-500"></i>
+  <span class="text-sm font-medium text-gray-700">복사되었습니다!</span>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 아코디언
+function toggleAccordion(btn) {
+  const content = btn.nextElementSibling;
+  const isOpen = content.classList.contains('open');
+  content.classList.toggle('open', !isOpen);
+  btn.classList.toggle('open', !isOpen);
+}
+
+// 코드 복사
+function copyCode(el) {
+  const code = el.querySelector('code').textContent.trim();
+  navigator.clipboard.writeText(code).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = code;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  });
+  const toast = document.getElementById('copyToast');
+  toast.classList.remove('hidden');
+  setTimeout(() => toast.classList.add('hidden'), 2000);
+}
+</script>
+{% endblock %}

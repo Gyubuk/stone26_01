@@ -1,22 +1,185 @@
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>결과 - Round {{ d.round_no }}</title>
-</head>
-<body>
-  <h1>이번 선택의 결과입니다</h1>
-  <p>Round {{ d.round_no }} / {{ max_round }}</p>
+{% extends 'base.html' %}
+{% load static %}
 
-  <ul>
-    <li>선택: {{ d.get_decision_type_display }}</li>
-    {% if d.decision_type == "bid" %}
-      <li>입찰가: {{ d.bid_value }}</li>
+{% block title %}실험 {{ exp_no }}의 {{ round_no }} 결과{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Noto Sans KR', sans-serif; }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes bounceIn {
+    0%   { opacity: 0; transform: scale(0.4); }
+    55%  { transform: scale(1.08); }
+    75%  { transform: scale(0.95); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  .fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
+  .bounce-in  { animation: bounceIn 0.6s ease-out forwards; }
+  .delay-1    { animation-delay: 0.1s; opacity: 0; }
+  .delay-2    { animation-delay: 0.2s; opacity: 0; }
+  .delay-3    { animation-delay: 0.3s; opacity: 0; }
+
+  .btn-next { transition: all 0.2s ease; }
+  .btn-next:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37,99,235,0.25); }
+  .btn-next:active { transform: translateY(0); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 pb-20" style="font-family: 'Noto Sans KR', sans-serif;">
+
+  <!-- 헤더 -->
+  <div class="bg-white border-b border-gray-200 py-4 px-6 flex items-center shadow-sm">
+    <div class="flex items-center gap-2 text-gray-700 font-bold">
+      <i class="fas fa-box text-gray-400 text-sm"></i>
+      <span class="text-sm sm:text-base">온라인 경매 상황에서의 구매 의사결정 실험</span>
+    </div>
+    <div class="ml-2 text-xs text-gray-400 hidden sm:block">MRA Lab @ SSU</div>
+  </div>
+
+  <div class="max-w-lg mx-auto px-4 pt-10">
+
+    <!-- 실험 정보 -->
+    <p class="text-center text-xs text-gray-400 font-mono mb-8 fade-in-up">
+      실험 {{ exp_no }} &middot; 라운드 {{ round_no }} / {{ max_round }}
+    </p>
+
+    {% if decision.outcome == 'bought' %}
+    <!-- ── 즉시구매 완료 ── -->
+    <div class="text-center mb-8 fade-in-up delay-1">
+      <div class="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-5 bounce-in">
+        <i class="fas fa-check text-emerald-500 text-4xl"></i>
+      </div>
+      <h2 class="text-3xl font-black text-gray-900 mb-2">즉시구매 완료!</h2>
+      <p class="text-gray-500 text-sm">판매자가 제시한 가격으로 구매하였습니다.</p>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-8 fade-in-up delay-2">
+      <div class="bg-gray-50/50 px-6 py-4 border-b border-gray-100">
+        <p class="text-xs text-gray-400 font-bold uppercase tracking-wide">결제 정보</p>
+      </div>
+      <div class="px-6 py-6">
+        <div class="flex justify-between items-center pb-4 border-b border-gray-100">
+          <span class="text-gray-500 font-medium text-sm">즉시구매가</span>
+          <span class="font-bold text-gray-800">{{ decision.Ps|floatformat:0 }}원</span>
+        </div>
+        <div class="flex justify-between items-center pt-4">
+          <span class="font-bold text-gray-900">최종 지불 금액</span>
+          <span class="text-2xl font-black text-emerald-600">{{ decision.paid_price|floatformat:0 }}원</span>
+        </div>
+      </div>
+    </div>
+
+    {% elif decision.outcome == 'win' %}
+    <!-- ── 낙찰 ── -->
+    <div class="text-center mb-8 fade-in-up delay-1">
+      <div class="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-5 bounce-in">
+        <i class="fas fa-trophy text-blue-500 text-4xl"></i>
+      </div>
+      <h2 class="text-3xl font-black text-gray-900 mb-2">낙찰!</h2>
+      <p class="text-gray-500 text-sm">입찰이 성공하였습니다.</p>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-8 fade-in-up delay-2">
+      <div class="bg-gray-50/50 px-6 py-4 border-b border-gray-100">
+        <p class="text-xs text-gray-400 font-bold uppercase tracking-wide">결제 정보</p>
+      </div>
+      <div class="px-6 py-6">
+        <div class="flex justify-between items-center pb-3 border-b border-gray-100">
+          <span class="text-gray-500 font-medium text-sm">입찰가</span>
+          <span class="font-bold text-gray-800">{{ decision.bid_value|floatformat:0 }}원</span>
+        </div>
+        <div class="flex justify-between items-center py-3 border-b border-gray-100">
+          <span class="text-gray-500 font-medium text-sm">수수료</span>
+          <span class="font-bold text-gray-800">{{ decision.c|floatformat:0 }}원</span>
+        </div>
+        <div class="flex justify-between items-center pt-4">
+          <span class="font-bold text-gray-900">최종 지불 금액</span>
+          <span class="text-2xl font-black text-blue-600">{{ decision.paid_price|floatformat:0 }}원</span>
+        </div>
+      </div>
+    </div>
+
+    {% elif decision.outcome == 'lose' %}
+    <!-- ── 유찰 ── -->
+    <div class="text-center mb-8 fade-in-up delay-1">
+      <div class="w-24 h-24 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-5 bounce-in">
+        <i class="fas fa-times text-amber-500 text-4xl"></i>
+      </div>
+      <h2 class="text-3xl font-black text-gray-900 mb-2">유찰</h2>
+      <p class="text-gray-500 text-sm">
+        {% if round_no < max_round %}다음 라운드에서 다시 시도하세요.
+        {% else %}마지막 라운드였습니다.{% endif %}
+      </p>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6 fade-in-up delay-2">
+      <div class="bg-gray-50/50 px-6 py-4 border-b border-gray-100">
+        <p class="text-xs text-gray-400 font-bold uppercase tracking-wide">입찰 정보</p>
+      </div>
+      <div class="px-6 py-6">
+        <div class="flex justify-between items-center pb-4 border-b border-gray-100">
+          <span class="text-gray-500 font-medium text-sm">입찰가</span>
+          <span class="font-bold text-gray-800">{{ decision.bid_value|floatformat:0 }}원</span>
+        </div>
+        <div class="flex justify-between items-center pt-4">
+          <span class="font-bold text-gray-900">지불 금액</span>
+          <span class="text-2xl font-black text-gray-400">0원</span>
+        </div>
+      </div>
+    </div>
+
+    {% if round_no < max_round %}
+    <div class="bg-blue-50 border border-blue-200 rounded-xl px-5 py-4 mb-8 fade-in-up delay-2">
+      <div class="flex items-start gap-3">
+        <i class="fas fa-info-circle text-blue-500 mt-0.5 shrink-0"></i>
+        <p class="text-blue-700 text-sm leading-relaxed font-medium">
+          다음 라운드 최저입찰가는 <strong>{{ decision.bid_value|floatformat:0 }}원</strong>으로 변경됩니다.
+        </p>
+      </div>
+    </div>
+    {% else %}
+    <div class="bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 mb-8 fade-in-up delay-2">
+      <div class="flex items-start gap-3">
+        <i class="fas fa-exclamation-triangle text-amber-500 mt-0.5 shrink-0"></i>
+        <p class="text-amber-700 text-sm leading-relaxed font-medium">
+          5라운드가 모두 종료되었습니다. 다음 실험으로 넘어갑니다.
+        </p>
+      </div>
+    </div>
     {% endif %}
-    <li>결과: {{ d.get_outcome_display }}</li>
-    <li>지불 금액: {{ d.paid_price }}</li>
-  </ul>
 
-  <a href="/exp/round/{{ next_round }}/">다음 라운드로</a>
-</body>
-</html>
+    {% endif %}
+
+    <!-- 다음 버튼 -->
+    <div class="fade-in-up delay-3">
+      <a href="{{ next_url }}"
+         class="btn-next w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 text-base">
+        {{ next_label }}
+        <i class="fas fa-arrow-right text-sm"></i>
+      </a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const btn = document.querySelector('.btn-next');
+      if (btn) btn.click();
+    }
+  });
+})();
+</script>
+{% endblock %}

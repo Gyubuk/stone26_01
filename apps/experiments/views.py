@@ -1,138 +1,295 @@
-from django.shortcuts import render, redirect, get_object_or_404
+# apps/experiments/views.py
+
+from django.shortcuts import render, redirect
+from django.urls import reverse
+from django.views.decorators.http import require_http_methods
+from django.contrib import messages
 from apps.participants.models import Participant
 from .models import RoundDecision
-import random
+from .config import (
+    MAX_EXP, MAX_ROUND, MAX_TYPE, PS, K_INITIAL, STEP,
+    TYPE_CONFIGS, get_exp_config, get_type_no, get_repeat_no,
+    generate_market_price
+)
 
-MAX_ROUND = 5
-
-# 일단 조건은 "고정"으로 시작 (나중에 라운드별로 바꿔도 됨)
-DEFAULT_Ps = 190000
-DEFAULT_k = 110000
-DEFAULT_c = 5000
-
-STEP = 1000  # 입찰 단위(천원). 교수님 피드백에 맞춰 UI도 버튼으로 만들 예정
 
 def _get_participant(request):
-    pid = request.session.get("participant_id")
-    if not pid:
+    """세션에서 참가자 가져오기"""
+    participant_id = request.session.get('participant_id')
+    if not participant_id:
         return None
-    return Participant.objects.filter(id=pid).first()
+    try:
+        return Participant.objects.get(id=participant_id)
+    except Participant.DoesNotExist:
+        return None
 
-def _clamp_to_step(value: int, step: int) -> int:
-    return int(round(value / step) * step)
 
-def round_view(request, round_no: int):
-    p = _get_participant(request)
-    if not p:
-        return redirect("/p/trait/")
+def _get_min_bid(participant_id, exp_no, round_no):
+    """
+    현재 라운드의 최저입찰가 계산
+    - 라운드 1: 초기값 K_INITIAL
+    - 라운드 2~5: 전 라운드에서 유찰했다면 그때 입찰한 가격으로 업데이트
+    """
+    if round_no == 1:
+        return K_INITIAL
 
+    prev = RoundDecision.objects.filter(
+        participant_id=participant_id,
+        exp_no=exp_no,
+        round_no=round_no - 1
+    ).first()
+
+    if prev and prev.outcome == 'lose' and prev.bid_value:
+        return prev.bid_value
+
+    return K_INITIAL
+
+
+@require_http_methods(["GET"])
+def round_view(request, exp_no, round_no):
+    """라운드 화면"""
+    participant = _get_participant(request)
+    if not participant:
+        messages.error(request, '먼저 참가자 정보를 입력해주세요.')
+        return redirect('core:home')
+
+    # 범위 검증
+    if exp_no < 1 or exp_no > MAX_EXP:
+        return redirect(reverse('experiments:done'))
     if round_no < 1 or round_no > MAX_ROUND:
-        return redirect("/exp/round/1/")
+        return redirect(reverse('experiments:done'))
 
-    Ps, k, c = DEFAULT_Ps, DEFAULT_k, DEFAULT_c
+    # 현재 실험에서 이미 구매/낙찰한지 확인
+    has_acquired = RoundDecision.objects.filter(
+        participant=participant,
+        exp_no=exp_no,
+        outcome__in=['bought', 'win']
+    ).exists()
 
-    if request.method == "POST":
-        decision = request.POST.get("decision")  # "buy" or "bid"
+    if has_acquired:
+        if exp_no < MAX_EXP:
+            return redirect(reverse('experiments:round', kwargs={'exp_no': exp_no + 1, 'round_no': 1}))
+        else:
+            return redirect(reverse('experiments:done'))
 
-        if decision == "buy":
-            d = RoundDecision.objects.create(
-                participant=p,
-                round_no=round_no,
-                Ps=Ps, k=k, c=c,
-                decision_type="buy",
-                bid_value=None,
-                market_price=None,
-                outcome="bought",
-                paid_price=Ps,  # 추측: 즉시구매는 Ps만 지불(수수료 없음)
-            )
-            return redirect(f"/exp/result/{d.id}/")
+    # 이미 이 라운드를 했는지 확인
+    existing = RoundDecision.objects.filter(
+        participant=participant,
+        exp_no=exp_no,
+        round_no=round_no
+    ).first()
+    if existing:
+        return redirect(reverse('experiments:result', kwargs={'decision_id': existing.id}))
 
-        if decision == "bid":
-            raw = request.POST.get("bid_value")
-            if not raw:
-                return render(request, "experiments/round.html", {
-                    "error": "입찰가를 입력해 주세요.",
-                    "round_no": round_no, "max_round": MAX_ROUND,
-                    "Ps": Ps, "k": k, "c": c, "step": STEP,
-                    "default_bid": k,
-                })
+    config = get_exp_config(exp_no)
+    min_bid = _get_min_bid(participant.id, exp_no, round_no)
 
-            try:
-                bid = int(raw)
-            except ValueError:
-                bid = k
+    request.session['current_exp'] = exp_no
+    request.session['current_round'] = round_no
 
-            # step 맞추기 + 범위 제한
-            bid = _clamp_to_step(bid, STEP)
-            bid = max(k, min(Ps, bid))
+    context = {
+        'exp_no': exp_no,
+        'round_no': round_no,
+        'max_exp': MAX_EXP,
+        'max_round': MAX_ROUND,
+        'Ps': PS,
+        'k': min_bid,
+        'c': config['c'],
+        'step': STEP,
+        'participant': participant,
+    }
+    return render(request, 'experiments/round.html', context)
 
-            # ------- 낙찰 로직 (추측) -------
-            # 숨은 시장가격 M을 [k, Ps]에서 랜덤으로 하나 뽑고, bid >= M 이면 낙찰
-            market_price = random.randrange(k, Ps + STEP, STEP)
-            win = bid >= market_price
-            # --------------------------------
 
-            if win:
-                outcome = "win"
-                paid = bid + c  # 추측: 입찰 낙찰 시 수수료 c 추가
-            else:
-                outcome = "lose"
-                paid = 0
+@require_http_methods(["POST"])
+def make_choice(request):
+    """즉시구매 또는 입찰 처리"""
+    participant = _get_participant(request)
+    if not participant:
+        messages.error(request, '세션이 만료되었습니다.')
+        return redirect('core:home')
 
-            d = RoundDecision.objects.create(
-                participant=p,
-                round_no=round_no,
-                Ps=Ps, k=k, c=c,
-                decision_type="bid",
-                bid_value=bid,
-                market_price=market_price,
-                outcome=outcome,
-                paid_price=paid,
-            )
-            return redirect(f"/exp/result/{d.id}/")
+    exp_no = int(request.POST.get('exp_no', 1))
+    round_no = int(request.POST.get('round_no', 1))
+    decision = request.POST.get('decision')
 
-        # decision 값 이상할 때
-        return redirect(f"/exp/round/{round_no}/")
+    # 중복 제출 방지
+    existing = RoundDecision.objects.filter(
+        participant=participant,
+        exp_no=exp_no,
+        round_no=round_no
+    ).first()
+    if existing:
+        return redirect(reverse('experiments:result', kwargs={'decision_id': existing.id}))
 
-    # GET 화면
-    return render(request, "experiments/round.html", {
-        "round_no": round_no,
-        "max_round": MAX_ROUND,
-        "Ps": Ps,
-        "k": k,
-        "c": c,
-        "step": STEP,
-        "default_bid": k,
-    })
+    config = get_exp_config(exp_no)
+    c = config['c']
+    min_bid = _get_min_bid(participant.id, exp_no, round_no)
 
-def result_view(request, decision_id: int):
-    p = _get_participant(request)
-    if not p:
-        return redirect("/p/trait/")
+    if decision == 'buy':
+        # 즉시구매: PS 그대로 지불
+        rd = RoundDecision.objects.create(
+            participant=participant,
+            exp_no=exp_no,
+            round_no=round_no,
+            Ps=PS,
+            k=min_bid,
+            c=c,
+            decision_type='buy',
+            outcome='bought',
+            paid_price=PS,
+        )
+        return redirect(reverse('experiments:result', kwargs={'decision_id': rd.id}))
 
-    d = get_object_or_404(RoundDecision, id=decision_id, participant=p)
+    elif decision == 'bid':
+        try:
+            bid_amount = int(request.POST.get('bid_value', min_bid))
+        except (ValueError, TypeError):
+            messages.error(request, '올바른 입찰가를 입력해주세요.')
+            return redirect(reverse('experiments:round', kwargs={'exp_no': exp_no, 'round_no': round_no}))
 
-    # 다음 라운드
-    next_round = d.round_no + 1
+        if bid_amount < min_bid or bid_amount > PS:
+            messages.error(request, f'입찰가는 {min_bid:,}원 ~ {PS:,}원 사이여야 합니다.')
+            return redirect(reverse('experiments:round', kwargs={'exp_no': exp_no, 'round_no': round_no}))
 
-    # 5회 끝나면 done으로
-    if d.round_no >= MAX_ROUND:
-        return redirect("/exp/done/")
+        market_price = generate_market_price(exp_no, round_no)
 
-    return render(request, "experiments/result.html", {
-        "d": d,
-        "next_round": next_round,
-        "max_round": MAX_ROUND,
-    })
+        if bid_amount >= market_price:
+            outcome = 'win'
+            paid_price = bid_amount + c  # 낙찰: 입찰가 + 수수료
+        else:
+            outcome = 'lose'
+            paid_price = 0
 
+        rd = RoundDecision.objects.create(
+            participant=participant,
+            exp_no=exp_no,
+            round_no=round_no,
+            Ps=PS,
+            k=min_bid,
+            c=c,
+            decision_type='bid',
+            bid_value=bid_amount,
+            market_price=market_price,
+            outcome=outcome,
+            paid_price=paid_price,
+        )
+        return redirect(reverse('experiments:result', kwargs={'decision_id': rd.id}))
+
+    messages.error(request, '올바른 선택을 해주세요.')
+    return redirect(reverse('experiments:round', kwargs={'exp_no': exp_no, 'round_no': round_no}))
+
+
+@require_http_methods(["GET"])
+def result_view(request, decision_id):
+    """결과 화면"""
+    participant = _get_participant(request)
+    if not participant:
+        return redirect('core:home')
+
+    try:
+        decision = RoundDecision.objects.get(id=decision_id, participant=participant)
+    except RoundDecision.DoesNotExist:
+        return redirect('core:home')
+
+    exp_no = decision.exp_no
+    round_no = decision.round_no
+    acquired = decision.outcome in ['bought', 'win']
+
+    # 다음 단계 결정
+    if acquired or round_no >= MAX_ROUND:
+        # 구매/낙찰 완료 OR 5라운드 모두 유찰 → 다음 실험
+        if exp_no < MAX_EXP:
+            next_url = reverse('experiments:round', kwargs={'exp_no': exp_no + 1, 'round_no': 1})
+            next_label = f"실험 {exp_no + 1} 시작"
+        else:
+            next_url = reverse('experiments:done')
+            next_label = "실험 종료"
+    else:
+        # 유찰 → 다음 라운드
+        next_url = reverse('experiments:round', kwargs={'exp_no': exp_no, 'round_no': round_no + 1})
+        next_label = f"라운드 {round_no + 1}"
+
+    context = {
+        'decision': decision,
+        'exp_no': exp_no,
+        'round_no': round_no,
+        'max_exp': MAX_EXP,
+        'max_round': MAX_ROUND,
+        'next_url': next_url,
+        'next_label': next_label,
+        'acquired': acquired,
+    }
+    return render(request, 'experiments/result.html', context)
+
+
+@require_http_methods(["GET"])
 def done_view(request):
-    p = _get_participant(request)
-    if not p:
-        return redirect("/p/trait/")
+    """실험 종료 화면"""
+    participant = _get_participant(request)
+    if not participant:
+        return redirect('core:home')
 
-    # 간단 요약(선택)
-    decisions = RoundDecision.objects.filter(participant=p).order_by("round_no")
-    return render(request, "experiments/done.html", {
-        "participant": p,
-        "decisions": decisions,
-    })
+    exp_summaries = []
+    # type_no 기준으로 집계 (수수료별)
+    c_totals = {}  # {c값: {'count': 0, 'total_paid': 0}}
+    total_paid = 0
+
+    for exp_no in range(1, MAX_EXP + 1):
+        config = get_exp_config(exp_no)
+        type_no = get_type_no(exp_no)
+        repeat_no = get_repeat_no(exp_no)
+        c = config['c']
+
+        decisions = RoundDecision.objects.filter(
+            participant=participant,
+            exp_no=exp_no
+        ).order_by('round_no')
+
+        # 구매/낙찰 여부 확인
+        final = decisions.filter(outcome__in=['bought', 'win']).first()
+
+        if final:
+            paid = final.paid_price
+        else:
+            # 5라운드 모두 유찰 → PS(190,000원)로 강제 구매
+            paid = PS + c
+
+        total_paid += paid
+
+        # 수수료별 집계
+        if c not in c_totals:
+            c_totals[c] = {'count': 0, 'total_paid': 0}
+        c_totals[c]['count'] += 1
+        c_totals[c]['total_paid'] += paid
+
+        exp_summaries.append({
+            'exp_no': exp_no,
+            'type_no': type_no,
+            'repeat_no': repeat_no,
+            # ✅ seller 키 제거 - 실험자에게 노출 금지
+            'c': c,
+            'decisions': decisions,
+            'final': final,
+            'paid': paid,
+        })
+
+    # 수수료별 요약 (seller 정보 없이)
+    type_summaries = []
+    for c_val in sorted(c_totals.keys()):
+        count = c_totals[c_val]['count']
+        total = c_totals[c_val]['total_paid']
+        type_summaries.append({
+            'c': c_val,
+            'count': count,
+            'avg_paid': total / count if count > 0 else 0,
+        })
+
+    context = {
+        'participant': participant,
+        'exp_summaries': exp_summaries,
+        'type_summaries': type_summaries,
+        'total_paid': total_paid,
+        'max_exp': MAX_EXP,
+    }
+    return render(request, 'experiments/done.html', context)
