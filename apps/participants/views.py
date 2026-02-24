@@ -1,85 +1,62 @@
+# apps/participants/views.py
+
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from .models import Participant
 
-def trait(request):
-    if request.method == "POST":
-        # 폼 데이터 받기
-        consent = (request.POST.get("consent") == "on")
-        product = request.POST.get("product")
-        expected_price = request.POST.get("expected_price")
-        risk = request.POST.get("risk")
-        loss = request.POST.get("loss")
-        exp = request.POST.get("exp")
 
-        # 유효성 검사
-        if not consent:
-            return render(request, "participants/trait.html", {
-                "error": "실험 참여 동의는 필수입니다."
-            })
+def trait(request):
+    """상품 선택 및 실험 설명 화면"""
+    participant_id = request.session.get('participant_id')
+    if not participant_id:
+        messages.error(request, '먼저 개인정보를 입력해주세요.')
+        return redirect('core:home')
+
+    try:
+        participant = Participant.objects.get(id=participant_id)
+    except Participant.DoesNotExist:
+        messages.error(request, '참가자 정보를 찾을 수 없습니다.')
+        return redirect('core:home')
+
+    if request.method == "POST":
+        product = request.POST.get("product", "").strip()
+        lottery_raw = request.POST.get("expected_price_raw", "").strip()
 
         if not product:
             return render(request, "participants/trait.html", {
-                "error": "구매 희망 상품을 선택해주세요."
+                "error": "구매 희망 상품을 입력해주세요.",
+                "participant": participant
             })
 
-        if not expected_price:
+        if not lottery_raw:
             return render(request, "participants/trait.html", {
-                "error": "예상 가격을 입력해주세요."
+                "error": "위험 성향 측정 금액을 입력해주세요.",
+                "participant": participant
             })
 
-        # 예상 가격 검증
         try:
-            expected_price = int(expected_price)
-            if expected_price < 5 or expected_price > 100:
-                return render(request, "participants/trait.html", {
-                    "error": "예상 가격은 5~100만원 사이로 입력해주세요."
-                })
+            lottery_value = int(lottery_raw)
+            if lottery_value < 0:
+                raise ValueError
         except (ValueError, TypeError):
             return render(request, "participants/trait.html", {
-                "error": "올바른 가격을 입력해주세요."
+                "error": "올바른 금액을 입력해주세요.",
+                "participant": participant
             })
 
-        if not risk:
-            return render(request, "participants/trait.html", {
-                "error": "위험성향 질문에 답해주세요."
-            })
-
-        if not loss:
-            return render(request, "participants/trait.html", {
-                "error": "손실회피 질문에 답해주세요."
-            })
-
-        if not exp:
-            return render(request, "participants/trait.html", {
-                "error": "경매 경험 여부를 선택해주세요."
-            })
-
-        # 참가자 생성
         try:
-            p = Participant.objects.create(
-                consent=True,
-                product=product,
-                expected_price=expected_price,
-                risk=int(risk),
-                loss=int(loss),
-                exp=exp,
-            )
+            participant.product = product
+            participant.lottery = lottery_value
+            participant.save()
 
-            # 세션에 참가자 정보 저장
-            request.session["participant_id"] = p.id
-            request.session["current_round"] = 1
-
-            # 성공 메시지
-            messages.success(request, f'참가자 코드: {p.code} - 실험을 시작합니다!')
-
-            # 실험 시작
-            return redirect('experiments:round', round_number=1)
+            return redirect('experiments:round', exp_no=1, round_no=1)
 
         except Exception as e:
             return render(request, "participants/trait.html", {
-                "error": f"참가자 생성 중 오류가 발생했습니다: {str(e)}"
+                "error": f"저장 중 오류가 발생했습니다: {str(e)}",
+                "participant": participant
             })
 
-    # GET 요청
-    return render(request, "participants/trait.html")
+    return render(request, "participants/trait.html", {
+        "participant": participant
+    })
