@@ -3,7 +3,7 @@ name: Deploy to EC2
 on:
   push:
     branches:
-      - ver01  # 이 브랜치에 push할 때 자동 배포
+      - main  # 이 브랜치에 push할 때 자동 배포
 
 jobs:
   deploy:
