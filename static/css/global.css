@@ -1,0 +1,103 @@
+/* 전역 스타일 */
+body {
+    font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+/* 애니메이션 */
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* 메시지 알림 스타일 개선 */
+.alert {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* 로딩 스피너 */
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(0,0,0,.1);
+    border-radius: 50%;
+    border-top-color: #007bff;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* 
+## 5. 최종 디렉토리 구조
+my_auction_project/
+├── config/
+│   ├── __init__.py
+│   ├── settings.py          # TEMPLATES, STATICFILES_DIRS 설정
+│   ├── urls.py
+│   └── wsgi.py
+│
+├── apps/
+│   ├── __init__.py
+│   ├── core/
+│   │   ├── templates/
+│   │   │   └── core/
+│   │   │       └── home.html
+│   │   └── views.py
+│   │
+│   ├── participants/
+│   │   ├── templates/
+│   │   │   └── participants/
+│   │   │       └── trait.html
+│   │   └── views.py
+│   │
+│   └── experiments/
+│       ├── static/
+│       │   └── experiments/
+│       │       ├── css/
+│       │       │   ├── round.css
+│       │       │   ├── result.css
+│       │       │   └── done.css
+│       │       └── js/
+│       │           ├── round.js
+│       │           ├── result.js
+│       │           └── done.js
+│       │
+│       ├── templates/
+│       │   └── experiments/
+│       │       ├── round.html      # {% extends 'base.html' %}
+│       │       ├── result.html     # {% extends 'base.html' %}
+│       │       └── done.html       # {% extends 'base.html' %}
+│       │
+│       ├── models.py
+│       ├── views.py
+│       └── urls.py
+│
+├── templates/                      # 👈 프로젝트 전역 템플릿
+│   └── base.html                   # 👈 여기!
+│
+├── static/                         # 👈 프로젝트 전역 static
+│   ├── css/
+│   │   └── global.css
+│   ├── js/
+│   │   └── global.js
+│   └── images/
+│       └── logo.png
+│
+├── staticfiles/                    # collectstatic 결과물 (gitignore)
+├── media/                          # 업로드 파일 (gitignore)
+└── manage.py
+/* 

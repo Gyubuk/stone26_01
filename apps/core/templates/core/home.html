@@ -1,0 +1,274 @@
+{% load static %}
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AuctionLab - 실험 참여</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Noto Sans KR', sans-serif; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp 0.5s ease-out forwards; }
+    .delay-1 { animation-delay: 0.05s; opacity: 0; }
+    .delay-2 { animation-delay: 0.15s; opacity: 0; }
+    .delay-3 { animation-delay: 0.25s; opacity: 0; }
+
+    /* 성별 토글 */
+    .gender-btn {
+      transition: all 0.15s ease;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 12px;
+      background: white;
+      color: #6b7280;
+      font-size: 1rem;
+      font-weight: 500;
+      padding: 14px 0;
+      cursor: pointer;
+      width: 100%;
+    }
+    .gender-btn.selected {
+      background: #2563eb;
+      color: white;
+      border-color: #2563eb;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(37,99,235,0.25);
+    }
+    .gender-btn:hover:not(.selected) {
+      border-color: #93c5fd;
+      color: #1d4ed8;
+    }
+
+    /* 스크롤바 */
+    .consent-scroll::-webkit-scrollbar { width: 5px; }
+    .consent-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+    .consent-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+    /* 제출 버튼 */
+    .btn-next {
+      transition: all 0.2s ease;
+      background: #f3f4f6;
+      border: 1px solid #d1d5db;
+      color: #1f2937;
+      font-weight: 700;
+      font-size: 1.05rem;
+      border-radius: 14px;
+      padding: 18px 0;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-next:hover {
+      background: #e5e7eb;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+    .btn-next:active { transform: translateY(0); }
+
+    /* 입력 필드 */
+    .field-input {
+      width: 100%;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 1rem;
+      color: #111827;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      font-family: 'Noto Sans KR', sans-serif;
+      background: white;
+    }
+    .field-input:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+    }
+    .field-input::placeholder { color: #9ca3af; }
+  </style>
+</head>
+<body class="min-h-screen bg-gray-50">
+
+  <!-- 상단 헤더 -->
+  <div class="bg-white border-b border-gray-200 py-4 px-6 flex items-center shadow-sm sticky top-0 z-10">
+    <div class="flex items-center gap-2 text-gray-700 font-bold">
+      <i class="fas fa-box text-gray-400 text-sm"></i>
+      <span class="text-sm sm:text-base">온라인 경매 상황에서의 구매 의사결정 실험</span>
+    </div>
+    <div class="ml-2 text-xs text-gray-400 font-medium hidden sm:block">MRA Lab @ SSU</div>
+  </div>
+
+  <div class="max-w-2xl mx-auto px-4 py-10 pb-20">
+
+    <!-- 페이지 타이틀 -->
+    <h1 class="text-2xl font-black text-center text-gray-900 mb-8 tracking-tight fade-up delay-1">HOME(가제)</h1>
+
+    <!-- 에러 메시지 -->
+    {% if error %}
+    <div class="mb-6 bg-red-50 border border-red-200 text-red-700 rounded-2xl px-5 py-4 flex items-center gap-3 fade-up">
+      <i class="fas fa-exclamation-circle text-red-500 shrink-0"></i>
+      <span class="font-medium text-sm">{{ error }}</span>
+    </div>
+    {% endif %}
+
+    <!-- 실험 소개 카드 -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6 fade-up delay-1">
+      <div class="bg-gray-50/50 px-8 py-5 border-b border-gray-100">
+        <div class="font-bold text-xl text-gray-900">온라인 경매 상황에서의 구매 의사결정 실험</div>
+      </div>
+      <div class="px-8 py-7">
+        <p class="text-gray-700 leading-relaxed mb-5">
+          본 실험은 온라인 한정판 상품 구매 상황에서 소비자의 <strong>'즉시구매 vs 경매참여'</strong> 선택을 관찰하는 행동경제학 실험입니다.
+        </p>
+        <ul class="space-y-1.5 text-gray-600 text-sm mb-6 pl-1">
+          <li class="flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-gray-400 shrink-0"></span>
+            소요 시간: 약 20-30분
+          </li>
+          <li class="flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-gray-400 shrink-0"></span>
+            총 10회 실험, 각 실험당 최대 5라운드
+          </li>
+        </ul>
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span>🎁</span>
+            <span class="font-bold text-red-500">참여 혜택</span>
+          </div>
+          <p class="text-gray-700 text-sm leading-relaxed">
+            전체 참여자 중 가장 낮은 가격으로 상품을 구매하신 분께 실제 상품을 드립니다!
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+
+      <!-- 1. 참가자 정보 입력 -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6 fade-up delay-2">
+        <div class="bg-gray-50/50 px-8 py-5 border-b border-gray-100">
+          <div class="font-bold text-xl text-gray-900">1. 실험 참여자 정보 입력</div>
+        </div>
+        <div class="px-8 py-7">
+          <p class="text-gray-500 text-sm mb-7">
+            원활한 실험 진행 및 참여 확인을 위해 아래 정보를 입력해주세요.
+          </p>
+
+          <!-- 성별 -->
+          <div class="mb-6">
+            <label class="block text-sm font-bold text-gray-800 mb-3">
+              성별 <span class="text-red-500">*</span>
+            </label>
+            <div class="grid grid-cols-3 gap-3">
+              <button type="button" class="gender-btn" data-value="male"   onclick="selectGender(this)">남성</button>
+              <button type="button" class="gender-btn" data-value="female" onclick="selectGender(this)">여성</button>
+              <button type="button" class="gender-btn" data-value="other"  onclick="selectGender(this)">기타</button>
+            </div>
+            <input type="hidden" id="genderInput" name="gender">
+          </div>
+
+          <!-- 나이 -->
+          <div class="mb-6">
+            <label class="block text-sm font-bold text-gray-800 mb-3">
+              나이 <span class="text-red-500">*</span>
+            </label>
+            <input type="number" name="age" min="1" max="120" required
+                   placeholder="예: 25"
+                   class="field-input">
+          </div>
+
+          <!-- 전화번호 -->
+          <div>
+            <label class="block text-sm font-bold text-gray-800 mb-3">전화번호 (선택)</label>
+            <input type="tel" name="phone"
+                   placeholder="010 - XXXX - XXXX"
+                   class="field-input">
+            <p class="text-xs text-gray-400 mt-2 leading-relaxed">
+              전화번호는 실험 참여 확인 및 추첨을 통한 쿠폰 증정 목적으로만 사용되며, 입력하지 않으셔도 실험에는 참여하실 수 있습니다.<br>
+              개인정보는 실험 참여 확인 및 보상 지급 목적으로만 사용되며, 연구 종료 후 즉시 폐기됩니다.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. 실험 참여 동의서 -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-8 fade-up delay-3">
+        <div class="bg-gray-50/50 px-8 py-5 border-b border-gray-100">
+          <div class="font-bold text-xl text-gray-900">2. 실험 참여 동의서</div>
+        </div>
+        <div class="px-8 py-7">
+
+          <!-- 체크박스 먼저 -->
+          <label class="flex items-center gap-3 p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer mb-5">
+            <input type="checkbox" name="consent" id="consent" required
+                   class="w-5 h-5 accent-blue-600 shrink-0 cursor-pointer">
+            <span class="text-gray-800 font-medium text-sm select-none">
+              아래 내용을 모두 확인하였으며, 실험 참여에 동의합니다. (필수)
+            </span>
+          </label>
+
+          <!-- 동의서 본문 -->
+          <div class="consent-scroll h-48 overflow-y-auto bg-gray-50/50 border border-gray-200 rounded-xl p-5 text-sm text-gray-700 leading-relaxed mb-8">
+            <ol class="list-decimal pl-4 space-y-3">
+              <li>
+                <strong>연구 목적</strong><br>
+                본 실험은 온라인 경매 환경에서의 구매 의사결정 과정을 분석하기 위한 학술 연구입니다.
+              </li>
+              <li>
+                <strong>실험 진행 방식</strong><br>
+                본 실험은 총 5회차 라운드로 구성되며, 각 라운드에서 즉시 구매 또는 입찰 참여 중 하나를 선택하게 됩니다.<br>
+                실험 규칙에 따라 5회차 이내에는 반드시 구매가 이루어져야 합니다.
+              </li>
+              <li>
+                <strong>데이터 수집 및 활용</strong><br>
+                실험 과정에서 입력한 선택 결과, 가격 정보, 반응 시간 등은 익명화된 연구 데이터로 수집되며, 개인을 식별할 수 있는 정보는 연구 분석에 사용되지 않습니다.
+              </li>
+              <li>
+                <strong>개인정보 처리</strong><br>
+                성별, 나이, 전화번호는 실험 참여 확인 및 보상 지급 목적으로만 수집되며, 연구 종료 후 즉시 폐기됩니다.
+              </li>
+              <li>
+                <strong>참여의 자발성</strong><br>
+                본 실험 참여는 자발적이며 언제든 중단할 수 있습니다. 불이익은 없습니다.
+              </li>
+              <li>
+                <strong>위험 및 보상</strong><br>
+                실제 금전적 손실은 발생하지 않으며, 가장 낮은 가격 구매자에게 소정의 상품이 제공됩니다.
+              </li>
+              <li>
+                <strong>연구 결과 공개</strong><br>
+                결과는 학술 목적의 익명 데이터로 공개될 수 있습니다.
+              </li>
+            </ol>
+          </div>
+
+          <!-- 제출 버튼 -->
+          <button type="submit" class="btn-next">
+            정보 입력 완료 및 다음 단계
+            <i class="fas fa-chevron-right text-sm"></i>
+          </button>
+
+        </div>
+      </div>
+
+    </form>
+  </div>
+
+  <script>
+    function selectGender(btn) {
+      document.querySelectorAll('.gender-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      document.getElementById('genderInput').value = btn.getAttribute('data-value');
+    }
+  </script>
+
+</body>
+</html>
