@@ -4,9 +4,7 @@
 {% block title %}실험 {{ exp_no }}의 {{ round_no }}{% endblock %}
 
 {% block extra_css %}
-<!-- Tailwind CSS -->
 <script src="https://cdn.tailwindcss.com"></script>
-<!-- Google Fonts: Pretendard -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
@@ -15,7 +13,6 @@
     background-color: #f8f9fa;
   }
 
-  /* 입찰가 pulse 애니메이션 */
   @keyframes bidPulse {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.08); color: #2563eb; }
@@ -24,7 +21,6 @@
     animation: bidPulse 0.3s ease-in-out;
   }
 
-  /* 토스트 슬라이드 인/아웃 */
   @keyframes slideInRight {
     from { transform: translateX(110%); opacity: 0; }
     to   { transform: translateX(0);    opacity: 1; }
@@ -36,7 +32,6 @@
   .toast-slide-in  { animation: slideInRight 0.3s ease-out forwards; }
   .toast-slide-out { animation: slideOutRight 0.3s ease-in forwards; }
 
-  /* 모달 오버레이 페이드인 */
   @keyframes fadeIn {
     from { opacity: 0; }
     to   { opacity: 1; }
@@ -48,16 +43,12 @@
   .modal-overlay { animation: fadeIn 0.2s ease-out forwards; }
   .modal-box     { animation: scaleIn 0.2s ease-out forwards; }
 
-  /* 버튼 hover 트랜지션 */
   .btn-buy:hover  { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(22,163,74,0.2); }
   .btn-bid:hover  { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37,99,235,0.2); }
   .stepper-btn:hover { transform: scale(1.04); }
   .stepper-btn:active { transform: scale(0.97); }
-
-  /* 가격 카드 호버 */
   .price-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
 
-  /* 라운드 프로그레스 바 */
   .progress-fill {
     transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
   }
@@ -111,10 +102,8 @@
     <!-- 라운드 프로그레스바 -->
     <div class="mb-8">
       <div class="w-full bg-gray-200 rounded-full h-2 relative">
-        {% with pct=round_no|floatformat:0 %}
         <div class="progress-fill h-2 rounded-full {% if round_no == max_round %}bg-red-500{% else %}bg-blue-600{% endif %}"
              style="width: {{ round_no }}0%"></div>
-        {% endwith %}
       </div>
       <div class="flex justify-between text-xs text-gray-400 mt-2 font-mono">
         <span>Round 1</span>
@@ -124,19 +113,16 @@
 
     <!-- 가격 카드 3종 -->
     <div class="grid grid-cols-3 gap-4 mb-8">
-      <!-- 즉시구매가 -->
       <div class="price-card bg-white rounded-2xl border border-gray-200 p-5 text-center transition-all duration-200 cursor-default">
         <p class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-2">즉시구매가</p>
         <p class="text-3xl font-black text-emerald-600 leading-none">{{ Ps|floatformat:0 }}</p>
         <p class="text-xs text-gray-400 mt-1 font-medium">원</p>
       </div>
-      <!-- 최저입찰가 -->
       <div class="price-card bg-white rounded-2xl border border-gray-200 p-5 text-center transition-all duration-200 cursor-default">
         <p class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-2">최저입찰가</p>
         <p class="text-3xl font-black text-amber-500 leading-none">{{ k|floatformat:0 }}</p>
         <p class="text-xs text-gray-400 mt-1 font-medium">원</p>
       </div>
-      <!-- 수수료 -->
       <div class="price-card bg-white rounded-2xl border border-gray-200 p-5 text-center transition-all duration-200 cursor-default">
         <p class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-2">수수료</p>
         <p class="text-3xl font-black text-red-500 leading-none">{{ c|floatformat:0 }}</p>
@@ -201,7 +187,6 @@
 <div id="bidModal" class="modal-overlay hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
   <div class="modal-box bg-white rounded-2xl w-full max-w-md shadow-2xl">
 
-    <!-- 모달 헤더 -->
     <div class="flex items-center justify-between px-7 py-5 border-b border-gray-100">
       <div class="flex items-center gap-2 font-bold text-gray-900 text-lg">
         <i class="fas fa-gavel text-blue-600"></i>
@@ -212,10 +197,7 @@
       </button>
     </div>
 
-    <!-- 모달 바디 -->
     <div class="px-7 py-6">
-
-      <!-- 현재 입찰가 표시 -->
       <div class="text-center mb-6">
         <p class="text-xs text-gray-400 font-bold uppercase tracking-wide mb-2">현재 입찰가</p>
         <div class="flex items-baseline justify-center gap-1">
@@ -224,7 +206,6 @@
         </div>
       </div>
 
-      <!-- 스텝퍼 버튼 -->
       <div class="grid grid-cols-2 gap-3 mb-5">
         <button type="button"
                 class="stepper-btn border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 rounded-xl py-3 font-bold text-sm transition-all duration-150 flex items-center justify-center gap-1"
@@ -248,7 +229,6 @@
         </button>
       </div>
 
-      <!-- 안내 문구 -->
       <div class="bg-gray-50 rounded-xl px-4 py-3 text-xs text-gray-500 leading-relaxed">
         <i class="fas fa-info-circle text-gray-400 mr-1"></i>
         범위: <strong class="text-gray-700">{{ k|floatformat:0 }}</strong> ~ <strong class="text-gray-700">{{ Ps|floatformat:0 }}</strong>원
@@ -257,7 +237,6 @@
       </div>
     </div>
 
-    <!-- 모달 푸터 -->
     <div class="flex gap-3 px-7 pb-6">
       <button id="cancelBidModal"
               class="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition-colors">
@@ -279,26 +258,72 @@
 
 {% block extra_js %}
 <script>
-  window.AUCTION_CONFIG = {
-    min: Number("{{ k }}"),
-    max: Number("{{ Ps }}"),
-    step: Number("{{ step }}"),
+(function() {
+  'use strict';
+
+  // ── 설정 ──────────────────────────────────────────
+  const config = {
+    min:        Number("{{ k }}"),
+    max:        Number("{{ Ps }}"),
+    step:       Number("{{ step }}"),
     commission: Number("{{ c }}"),
-    exp_no: Number("{{ exp_no }}"),
-    round_no: Number("{{ round_no }}")
+    exp_no:     Number("{{ exp_no }}"),
+    round_no:   Number("{{ round_no }}")
   };
 
-  // ── 모달 열기/닫기 ──────────────────────────────────
-  const modal = document.getElementById('bidModal');
-  const openBtn = document.getElementById('openBidModal');
-  const closeBtn = document.getElementById('closeBidModal');
-  const cancelBtn = document.getElementById('cancelBidModal');
+  // ── DOM ───────────────────────────────────────────
+  const modal      = document.getElementById('bidModal');
+  const openBtn    = document.getElementById('openBidModal');
+  const closeBtn   = document.getElementById('closeBidModal');
+  const cancelBtn  = document.getElementById('cancelBidModal');
+  const display    = document.getElementById('bidDisplay');
+  const submitBtn  = document.getElementById('bidSubmitBtn');
+  const stepperBtns = document.querySelectorAll('.stepper-btn');
 
+  let currentBid = config.min;
+
+  // ── 유틸 ──────────────────────────────────────────
+  function clampAndSnap(value) {
+    value = Math.round(value / config.step) * config.step;
+    return Math.max(config.min, Math.min(config.max, value));
+  }
+
+  function updateDisplay() {
+    display.textContent = currentBid.toLocaleString();
+    display.classList.add('value-changed');
+    setTimeout(() => display.classList.remove('value-changed'), 300);
+  }
+
+  function showToast(message, type = 'warning') {
+    const container = document.getElementById('toastContainer');
+    const colorMap = {
+      warning: { border: 'border-l-amber-400',   icon: 'text-amber-500',   fa: 'fa-exclamation-triangle' },
+      error:   { border: 'border-l-red-400',     icon: 'text-red-500',     fa: 'fa-times-circle' },
+      success: { border: 'border-l-emerald-400', icon: 'text-emerald-500', fa: 'fa-check-circle' },
+    };
+    const c = colorMap[type] || colorMap.warning;
+    const toast = document.createElement('div');
+    toast.className = `toast-slide-in bg-white border border-gray-100 ${c.border} border-l-4 rounded-xl shadow-lg px-4 py-3 flex items-start gap-3`;
+    toast.innerHTML = `
+      <i class="fas ${c.fa} ${c.icon} mt-0.5 shrink-0"></i>
+      <span class="flex-1 text-sm text-gray-700 font-medium leading-relaxed">${message}</span>
+      <button class="text-gray-300 hover:text-gray-500 transition-colors shrink-0 mt-0.5" onclick="this.closest('div').remove()">
+        <i class="fas fa-times text-xs"></i>
+      </button>
+    `;
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.classList.remove('toast-slide-in');
+      toast.classList.add('toast-slide-out');
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  }
+
+  // ── 모달 열기/닫기 ────────────────────────────────
   function openModal() {
-    modal.classList.remove('hidden');
-    // 열릴 때 입찰가 초기화
     currentBid = config.min;
     updateDisplay();
+    modal.classList.remove('hidden');
   }
   function closeModal() {
     modal.classList.add('hidden');
@@ -310,37 +335,62 @@
   modal.addEventListener('click', function(e) {
     if (e.target === modal) closeModal();
   });
-</script>
-<script src="{% static 'experiments/js/round.js' %}"></script>
 
-<script>
-  // ── 토스트: Bootstrap → Tailwind 대체 ──────────────
-  // round.js의 showToast를 덮어쓰기
-  window.showToastOverride = function(message, type = 'warning') {
-    const container = document.getElementById('toastContainer');
-    const colorMap = {
-      warning: { border: 'border-l-amber-400', icon: 'text-amber-500', bg: 'bg-white', fa: 'fa-exclamation-triangle' },
-      error:   { border: 'border-l-red-400',   icon: 'text-red-500',   bg: 'bg-white', fa: 'fa-times-circle' },
-      success: { border: 'border-l-emerald-400', icon: 'text-emerald-500', bg: 'bg-white', fa: 'fa-check-circle' },
+  // ── 스텝퍼 버튼 ───────────────────────────────────
+  stepperBtns.forEach(btn => {
+    btn.addEventListener('click', function() {
+      const delta = Number(this.getAttribute('data-delta'));
+      const newVal = clampAndSnap(currentBid + delta);
+      if (newVal !== currentBid) {
+        currentBid = newVal;
+        updateDisplay();
+      } else {
+        showToast(
+          currentBid + delta < config.min
+            ? `최저입찰가는 ${config.min.toLocaleString()}원입니다.`
+            : `최대입찰가는 ${config.max.toLocaleString()}원입니다.`,
+          'warning'
+        );
+      }
+    });
+  });
+
+  // ── 입찰 제출 ─────────────────────────────────────
+  submitBtn.addEventListener('click', function() {
+    const confirmMsg =
+      `${currentBid.toLocaleString()}원으로 입찰하시겠습니까?\n\n` +
+      `낙찰 시 총 비용: ${(currentBid + config.commission).toLocaleString()}원`;
+
+    if (!confirm(confirmMsg)) return;
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/exp/make_choice/';
+
+    const csrfMatch = document.cookie.match(/csrftoken=([^;]+)/);
+    const fields = {
+      'exp_no':            config.exp_no,
+      'round_no':          config.round_no,
+      'decision':          'bid',
+      'bid_value':         currentBid,
+      'csrfmiddlewaretoken': csrfMatch ? csrfMatch[1] : ''
     };
-    const c = colorMap[type] || colorMap.warning;
 
-    const toast = document.createElement('div');
-    toast.className = `toast-slide-in ${c.bg} border border-gray-100 ${c.border} border-l-4 rounded-xl shadow-lg px-4 py-3 flex items-start gap-3`;
-    toast.innerHTML = `
-      <i class="fas ${c.fa} ${c.icon} mt-0.5 shrink-0"></i>
-      <span class="flex-1 text-sm text-gray-700 font-medium leading-relaxed">${message}</span>
-      <button class="text-gray-300 hover:text-gray-500 transition-colors shrink-0 mt-0.5" onclick="this.closest('div').remove()">
-        <i class="fas fa-times text-xs"></i>
-      </button>
-    `;
-    container.appendChild(toast);
+    Object.entries(fields).forEach(([name, value]) => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = name;
+      input.value = value;
+      form.appendChild(input);
+    });
 
-    setTimeout(() => {
-      toast.classList.remove('toast-slide-in');
-      toast.classList.add('toast-slide-out');
-      setTimeout(() => toast.remove(), 300);
-    }, 3000);
-  };
+    document.body.appendChild(form);
+    form.submit();
+  });
+
+  // ── 초기화 ────────────────────────────────────────
+  updateDisplay();
+
+})();
 </script>
 {% endblock %}
