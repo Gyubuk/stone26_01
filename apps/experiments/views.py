@@ -293,3 +293,159 @@ def done_view(request):
         'max_exp': MAX_EXP,
     }
     return render(request, 'experiments/done.html', context)
+
+from django.shortcuts import render, redirect
+from django.urls import reverse
+from django.views.decorators.http import require_http_methods
+from django.contrib import messages
+
+# 연습용 고정값 (실제 실험과 별도로 관리)
+PRACTICE_PS   = 150_000   # 즉시구매가
+PRACTICE_K    = 80_000    # 최저입찰가
+PRACTICE_C    = 3_000     # 수수료
+PRACTICE_STEP = 1_000
+
+
+@require_http_methods(["GET"])
+def practice_round_view(request, round_no=1):
+    """
+    0라운드(연습게임) 화면.
+    세션에 연습 데이터를 저장하고 round.html을 is_practice=True 로 렌더링.
+    """
+    participant = _get_participant(request)
+    if not participant:
+        messages.error(request, '먼저 참가자 정보를 입력해주세요.')
+        return redirect('core:home')
+
+    # 연습 라운드 범위 보정
+    round_no = max(1, min(round_no, 5))
+
+    # 유찰 시 최저입찰가 누적 (세션 활용)
+    practice_min_bid = request.session.get('practice_min_bid', PRACTICE_K)
+
+    context = {
+        'is_practice': True,
+        'exp_no':      0,               # 연습 = 0번 실험
+        'round_no':    round_no,
+        'max_round':   5,
+        'Ps':          PRACTICE_PS,
+        'k':           practice_min_bid,
+        'c':           PRACTICE_C,
+        'step':        PRACTICE_STEP,
+        'participant': participant,
+    }
+    return render(request, 'experiments/round.html', context)
+
+
+@require_http_methods(["POST"])
+def practice_choice(request):
+    """
+    0라운드(연습게임) 선택 처리.
+    DB에는 저장하지 않고 세션으로만 관리.
+    """
+    participant = _get_participant(request)
+    if not participant:
+        return redirect('core:home')
+
+    round_no  = int(request.POST.get('round_no', 1))
+    decision  = request.POST.get('decision')
+    min_bid   = int(request.session.get('practice_min_bid', PRACTICE_K))
+
+    if decision == 'buy':
+        # 즉시구매 → 연습 결과 페이지
+        request.session['practice_result'] = {
+            'outcome':    'bought',
+            'round_no':   round_no,
+            'Ps':         PRACTICE_PS,
+            'bid_value':  None,
+            'c':          PRACTICE_C,
+            'paid_price': PRACTICE_PS,
+        }
+        request.session.pop('practice_min_bid', None)   # 연습 데이터 초기화
+        return redirect(reverse('experiments:practice_result'))
+
+    elif decision == 'bid':
+        try:
+            bid_amount = int(request.POST.get('bid_value', min_bid))
+        except (ValueError, TypeError):
+            messages.error(request, '올바른 입찰가를 입력해주세요.')
+            return redirect(reverse('experiments:practice_round', kwargs={'round_no': round_no}))
+
+        if bid_amount < min_bid or bid_amount > PRACTICE_PS:
+            messages.error(request, f'입찰가는 {min_bid:,}원 ~ {PRACTICE_PS:,}원 사이여야 합니다.')
+            return redirect(reverse('experiments:practice_round', kwargs={'round_no': round_no}))
+
+        # 연습용 낙찰 판정: PS의 90% 이상이면 낙찰 (단순 기준)
+        accept_threshold = int(PRACTICE_PS * 0.90)
+        is_last_round    = (round_no >= 5)
+
+        if bid_amount >= accept_threshold or (is_last_round and bid_amount >= min_bid):
+            outcome    = 'win'
+            paid_price = bid_amount + PRACTICE_C
+            request.session.pop('practice_min_bid', None)
+        else:
+            outcome    = 'lose'
+            paid_price = 0
+            # 유찰: 다음 라운드 최저입찰가 업데이트
+            request.session['practice_min_bid'] = bid_amount
+
+        request.session['practice_result'] = {
+            'outcome':    outcome,
+            'round_no':   round_no,
+            'Ps':         PRACTICE_PS,
+            'bid_value':  bid_amount,
+            'c':          PRACTICE_C,
+            'paid_price': paid_price,
+        }
+        return redirect(reverse('experiments:practice_result'))
+
+    messages.error(request, '올바른 선택을 해주세요.')
+    return redirect(reverse('experiments:practice_round', kwargs={'round_no': round_no}))
+
+
+@require_http_methods(["GET"])
+def practice_result_view(request):
+    """
+    0라운드(연습게임) 결과 화면.
+    세션에서 결과를 읽어 result.html을 is_practice=True 로 렌더링.
+    """
+    participant = _get_participant(request)
+    if not participant:
+        return redirect('core:home')
+
+    result = request.session.get('practice_result')
+    if not result:
+        return redirect(reverse('experiments:practice_round', kwargs={'round_no': 1}))
+
+    # result.html 이 기대하는 decision 오브젝트를 dict-like 객체로 흉내냄
+    class PracticeDecision:
+        def __init__(self, d):
+            self.outcome    = d['outcome']
+            self.Ps         = d['Ps']
+            self.bid_value  = d['bid_value']
+            self.c          = d['c']
+            self.paid_price = d['paid_price']
+
+    round_no  = result['round_no']
+    outcome   = result['outcome']
+    acquired  = outcome in ('bought', 'win')
+
+    # 유찰이고 아직 라운드가 남아있다면 다음 연습 라운드로
+    if not acquired and round_no < 5:
+        next_round = round_no + 1
+        retry_url  = reverse('experiments:practice_round', kwargs={'round_no': next_round})
+    else:
+        retry_url  = reverse('experiments:practice_round', kwargs={'round_no': 1})
+
+    context = {
+        'is_practice':        True,
+        'decision':           PracticeDecision(result),
+        'exp_no':             0,
+        'round_no':           round_no,
+        'max_round':          5,
+        # 본실험 시작 URL
+        'start_real_url':     reverse('experiments:round', kwargs={'exp_no': 1, 'round_no': 1}),
+        # 연습 재시도 URL (결과에 따라 다음 라운드 or 처음부터)
+        'retry_practice_url': retry_url,
+    }
+    return render(request, 'experiments/result.html', context)

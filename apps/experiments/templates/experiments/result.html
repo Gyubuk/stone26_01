@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}실험 {{ exp_no }}의 {{ round_no }} 결과{% endblock %}
+{% block title %}{% if is_practice %}연습게임 결과{% else %}실험 {{ exp_no }}의 {{ round_no }} 결과{% endif %}{% endblock %}
 
 {% block extra_css %}
 <script src="https://cdn.tailwindcss.com"></script>
@@ -22,13 +22,16 @@
   }
   .fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
   .bounce-in  { animation: bounceIn 0.6s ease-out forwards; }
-  .delay-1    { animation-delay: 0.1s; opacity: 0; }
-  .delay-2    { animation-delay: 0.2s; opacity: 0; }
-  .delay-3    { animation-delay: 0.3s; opacity: 0; }
+  .delay-1 { animation-delay: 0.1s; opacity: 0; }
+  .delay-2 { animation-delay: 0.2s; opacity: 0; }
+  .delay-3 { animation-delay: 0.3s; opacity: 0; }
 
   .btn-next { transition: all 0.2s ease; }
-  .btn-next:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37,99,235,0.25); }
+  .btn-next:hover  { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37,99,235,0.25); }
   .btn-next:active { transform: translateY(0); }
+
+  .btn-practice-retry { transition: all 0.2s ease; }
+  .btn-practice-retry:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(99,102,241,0.2); }
 </style>
 {% endblock %}
 
@@ -36,23 +39,28 @@
 <div class="min-h-screen bg-gray-50 pb-20" style="font-family: 'Noto Sans KR', sans-serif;">
 
   <!-- 헤더 -->
-  <div class="bg-white border-b border-gray-200 py-4 px-6 flex items-center shadow-sm">
+  <div class="bg-white border-b border-gray-200 py-4 px-6 flex items-center shadow-sm sticky top-0 z-40">
     <div class="flex items-center gap-2 text-gray-700 font-bold">
       <i class="fas fa-box text-gray-400 text-sm"></i>
       <span class="text-sm sm:text-base">온라인 경매 상황에서의 구매 의사결정 실험</span>
     </div>
     <div class="ml-2 text-xs text-gray-400 hidden sm:block">MRA Lab @ SSU</div>
+    {# 판매자 타입 배지 제거 — 보안 #}
   </div>
 
   <div class="max-w-lg mx-auto px-4 pt-10">
 
     <!-- 실험 정보 -->
     <p class="text-center text-xs text-gray-400 font-mono mb-8 fade-in-up">
-      실험 {{ exp_no }} &middot; 라운드 {{ round_no }} / {{ max_round }}
+      {% if is_practice %}
+        연습게임 · 0라운드 종료
+      {% else %}
+        실험 {{ exp_no }} &middot; 라운드 {{ round_no }} / {{ max_round }}
+      {% endif %}
     </p>
 
-    {% if decision.outcome == 'bought' %}
     <!-- ── 즉시구매 완료 ── -->
+    {% if decision.outcome == 'bought' %}
     <div class="text-center mb-8 fade-in-up delay-1">
       <div class="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-5 bounce-in">
         <i class="fas fa-check text-emerald-500 text-4xl"></i>
@@ -77,8 +85,8 @@
       </div>
     </div>
 
-    {% elif decision.outcome == 'win' %}
     <!-- ── 낙찰 ── -->
+    {% elif decision.outcome == 'win' %}
     <div class="text-center mb-8 fade-in-up delay-1">
       <div class="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-5 bounce-in">
         <i class="fas fa-trophy text-blue-500 text-4xl"></i>
@@ -107,16 +115,21 @@
       </div>
     </div>
 
-    {% elif decision.outcome == 'lose' %}
     <!-- ── 유찰 ── -->
+    {% elif decision.outcome == 'lose' %}
     <div class="text-center mb-8 fade-in-up delay-1">
       <div class="w-24 h-24 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-5 bounce-in">
         <i class="fas fa-times text-amber-500 text-4xl"></i>
       </div>
       <h2 class="text-3xl font-black text-gray-900 mb-2">유찰</h2>
       <p class="text-gray-500 text-sm">
-        {% if round_no < max_round %}다음 라운드에서 다시 시도하세요.
-        {% else %}마지막 라운드였습니다.{% endif %}
+        {% if is_practice %}
+          연습게임에서 유찰되었습니다. 다시 시도하거나 본 실험을 시작하세요.
+        {% elif round_no < max_round %}
+          다음 라운드에서 다시 시도하세요.
+        {% else %}
+          마지막 라운드였습니다.
+        {% endif %}
       </p>
     </div>
 
@@ -136,35 +149,54 @@
       </div>
     </div>
 
-    {% if round_no < max_round %}
-    <div class="bg-blue-50 border border-blue-200 rounded-xl px-5 py-4 mb-8 fade-in-up delay-2">
-      <div class="flex items-start gap-3">
-        <i class="fas fa-info-circle text-blue-500 mt-0.5 shrink-0"></i>
-        <p class="text-blue-700 text-sm leading-relaxed font-medium">
-          다음 라운드 최저입찰가는 <strong>{{ decision.bid_value|floatformat:0 }}원</strong>으로 변경됩니다.
-        </p>
+    {% if not is_practice %}
+      {% if round_no < max_round %}
+      <div class="bg-blue-50 border border-blue-200 rounded-xl px-5 py-4 mb-8 fade-in-up delay-2">
+        <div class="flex items-start gap-3">
+          <i class="fas fa-info-circle text-blue-500 mt-0.5 shrink-0"></i>
+          <p class="text-blue-700 text-sm leading-relaxed font-medium">
+            다음 라운드 최저입찰가는 <strong>{{ decision.bid_value|floatformat:0 }}원</strong>으로 변경됩니다.
+          </p>
+        </div>
       </div>
-    </div>
-    {% else %}
-    <div class="bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 mb-8 fade-in-up delay-2">
-      <div class="flex items-start gap-3">
-        <i class="fas fa-exclamation-triangle text-amber-500 mt-0.5 shrink-0"></i>
-        <p class="text-amber-700 text-sm leading-relaxed font-medium">
-          5라운드가 모두 종료되었습니다. 다음 실험으로 넘어갑니다.
-        </p>
+      {% else %}
+      <div class="bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 mb-8 fade-in-up delay-2">
+        <div class="flex items-start gap-3">
+          <i class="fas fa-exclamation-triangle text-amber-500 mt-0.5 shrink-0"></i>
+          <p class="text-amber-700 text-sm leading-relaxed font-medium">
+            5라운드가 모두 종료되었습니다. 다음 실험으로 넘어갑니다.
+          </p>
+        </div>
       </div>
-    </div>
+      {% endif %}
     {% endif %}
 
-    {% endif %}
+    {% endif %}{# /outcome 분기 #}
 
-    <!-- 다음 버튼 -->
-    <div class="fade-in-up delay-3">
-      <a href="{{ next_url }}"
-         class="btn-next w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 text-base">
-        {{ next_label }}
-        <i class="fas fa-arrow-right text-sm"></i>
-      </a>
+    <!-- ── 버튼 영역 ── -->
+    <div class="space-y-3 fade-in-up delay-3">
+
+      {% if is_practice %}
+        {# 연습게임 완료 → 본실험 시작 (메인) #}
+        <a href="{{ start_real_url }}"
+           class="btn-next w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 text-base">
+          <i class="fas fa-play-circle"></i>
+          본 실험 시작하기
+        </a>
+        {# 연습 재시도 (서브) #}
+        <a href="{{ retry_practice_url }}"
+           class="btn-practice-retry w-full py-3.5 bg-white border-2 border-indigo-200 text-indigo-600 hover:bg-indigo-50 font-bold rounded-xl flex items-center justify-center gap-2 text-sm">
+          <i class="fas fa-redo"></i>
+          연습게임 한 번 더
+        </a>
+      {% else %}
+        <a href="{{ next_url }}"
+           class="btn-next w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 text-base">
+          {{ next_label }}
+          <i class="fas fa-arrow-right text-sm"></i>
+        </a>
+      {% endif %}
+
     </div>
 
   </div>
@@ -173,7 +205,7 @@
 
 {% block extra_js %}
 <script>
-(function() {
+(function () {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       const btn = document.querySelector('.btn-next');

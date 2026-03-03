@@ -49,7 +49,7 @@ def trait(request):
             participant.lottery = lottery_value
             participant.save()
 
-            return redirect('experiments:round', exp_no=1, round_no=1)
+            return redirect('experiments:practice_round_start')
 
         except Exception as e:
             return render(request, "participants/trait.html", {
