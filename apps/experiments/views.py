@@ -88,6 +88,8 @@ def round_view(request, exp_no, round_no):
     request.session['current_round'] = round_no
 
     context = {
+        'no_bootstrap': True,
+        'is_practice': False,
         'exp_no': exp_no,
         'round_no': round_no,
         'max_exp': MAX_EXP,
@@ -211,6 +213,8 @@ def result_view(request, decision_id):
         next_label = f"라운드 {round_no + 1}"
 
     context = {
+        'no_bootstrap': True,
+        'is_practice': False,
         'decision': decision,
         'exp_no': exp_no,
         'round_no': round_no,
@@ -324,6 +328,7 @@ def practice_round_view(request, round_no=1):
     practice_min_bid = request.session.get('practice_min_bid', PRACTICE_K)
 
     context = {
+        'no_bootstrap': True,
         'is_practice': True,
         'exp_no':      0,               # 연습 = 0번 실험
         'round_no':    round_no,
@@ -438,6 +443,7 @@ def practice_result_view(request):
         retry_url  = reverse('experiments:practice_round', kwargs={'round_no': 1})
 
     context = {
+        'no_bootstrap': True,
         'is_practice':        True,
         'decision':           PracticeDecision(result),
         'exp_no':             0,

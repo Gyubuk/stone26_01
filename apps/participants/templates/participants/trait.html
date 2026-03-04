@@ -255,18 +255,47 @@
     function formatRisk(input) {
       const raw = input.value.replace(/[^0-9]/g, '');
       input.value = raw ? Number(raw).toLocaleString() : '';
-
-      // hidden field에 숫자만 저장
       let hidden = document.getElementById('riskRaw');
       if (!hidden) {
         hidden = document.createElement('input');
-        hidden.type  = 'hidden';
-        hidden.id    = 'riskRaw';
-        hidden.name  = 'expected_price_raw';
+        hidden.type = 'hidden';
+        hidden.id = 'riskRaw';
+        hidden.name = 'expected_price_raw';
         input.closest('.flex').appendChild(hidden);
       }
       hidden.value = raw;
+      checkReady();
     }
+
+    function checkReady() {
+      const risk = document.getElementById('riskInput').value.trim();
+      const product = document.querySelector('input[name="product"]').value.trim();
+      const btn = document.getElementById('submitBtn');
+
+      if (risk && product) {
+        btn.style.background = '#4f46e5';
+        btn.style.color = 'white';
+        btn.style.cursor = 'pointer';
+        btn.disabled = false;
+      } else {
+        btn.style.background = '#e5e7eb';
+        btn.style.color = '#9ca3af';
+        btn.style.cursor = 'not-allowed';
+        btn.disabled = true;
+      }
+    }
+
+    // 상품 입력 감지
+    document.querySelector('input[name="product"]').addEventListener('input', checkReady);
+
+    // 초기 상태 비활성화
+    window.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.style.background = '#e5e7eb';
+      btn.style.color = '#9ca3af';
+      btn.style.cursor = 'not-allowed';
+    });
   </script>
 
 </body>

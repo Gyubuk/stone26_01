@@ -267,7 +267,47 @@
       document.querySelectorAll('.gender-btn').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
       document.getElementById('genderInput').value = btn.getAttribute('data-value');
+      checkReady();
     }
+
+    function checkReady() {
+      const gender = document.getElementById('genderInput').value;
+      const age = document.querySelector('input[name="age"]').value.trim();
+      const consent = document.getElementById('consent').checked;
+      const btn = document.querySelector('.btn-next');
+
+      if (gender && age && consent) {
+        btn.style.background = '#2563eb';
+        btn.style.color = 'white';
+        btn.style.cursor = 'pointer';
+        btn.disabled = false;
+      } else {
+        btn.style.background = '#f3f4f6';
+        btn.style.color = '#9ca3af';
+        btn.style.cursor = 'not-allowed';
+        btn.disabled = true;
+      }
+    }
+
+    document.querySelector('input[name="age"]').addEventListener('input', checkReady);
+    document.getElementById('consent').addEventListener('change', checkReady);
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const btn = document.querySelector('.btn-next');
+      btn.disabled = true;
+      btn.style.cursor = 'not-allowed';
+    });
+
+    document.querySelector('input[name="phone"]').addEventListener('input', function() {
+      const raw = this.value.replace(/[^0-9]/g, '');
+      if (raw.length <= 3) {
+        this.value = raw;
+      } else if (raw.length <= 7) {
+        this.value = `${raw.slice(0,3)}-${raw.slice(3)}`;
+      } else {
+        this.value = `${raw.slice(0,3)}-${raw.slice(3,7)}-${raw.slice(7,11)}`;
+      }
+    });
   </script>
 
 </body>
