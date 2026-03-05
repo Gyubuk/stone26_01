@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load humanize %}
 
 {% block title %}{% if is_practice %}연습게임 결과{% else %}실험 {{ exp_no }}의 {{ round_no }} 결과{% endif %}{% endblock %}
 
@@ -45,12 +46,10 @@
       <span class="text-sm sm:text-base">온라인 경매 상황에서의 구매 의사결정 실험</span>
     </div>
     <div class="ml-2 text-xs text-gray-400 hidden sm:block">MRA Lab @ SSU</div>
-    {# 판매자 타입 배지 제거 — 보안 #}
   </div>
 
   <div class="max-w-lg mx-auto px-4 pt-10">
 
-    <!-- 실험 정보 -->
     <p class="text-center text-xs text-gray-400 font-mono mb-8 fade-in-up">
       {% if is_practice %}
         연습게임 · 0라운드 종료
@@ -59,7 +58,7 @@
       {% endif %}
     </p>
 
-    <!-- ── 즉시구매 완료 ── -->
+    <!-- 즉시구매 완료 -->
     {% if decision.outcome == 'bought' %}
     <div class="text-center mb-8 fade-in-up delay-1">
       <div class="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-5 bounce-in">
@@ -68,24 +67,29 @@
       <h2 class="text-3xl font-black text-gray-900 mb-2">즉시구매 완료!</h2>
       <p class="text-gray-500 text-sm">판매자가 제시한 가격으로 구매하였습니다.</p>
     </div>
-
     <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-8 fade-in-up delay-2">
       <div class="bg-gray-50/50 px-6 py-4 border-b border-gray-100">
         <p class="text-xs text-gray-400 font-bold uppercase tracking-wide">결제 정보</p>
       </div>
       <div class="px-6 py-6">
-        <div class="flex justify-between items-center pb-4 border-b border-gray-100">
+        <div class="flex justify-between items-center pb-3 border-b border-gray-100">
           <span class="text-gray-500 font-medium text-sm">즉시구매가</span>
-          <span class="font-bold text-gray-800">{{ decision.Ps|floatformat:0 }}원</span>
+          <span class="font-bold text-gray-800">{{ decision.Ps|intcomma }}원</span>
         </div>
+        {% if accumulated_fee > 0 %}
+        <div class="flex justify-between items-center py-3 border-b border-gray-100">
+          <span class="text-gray-500 font-medium text-sm">이전 라운드 누적 수수료</span>
+          <span class="font-bold text-[#EF4444]">{{ accumulated_fee|intcomma }}원</span>
+        </div>
+        {% endif %}
         <div class="flex justify-between items-center pt-4">
           <span class="font-bold text-gray-900">최종 지불 금액</span>
-          <span class="text-2xl font-black text-emerald-600">{{ decision.paid_price|floatformat:0 }}원</span>
+          <span class="text-2xl font-black text-emerald-600">{{ total_paid|intcomma }}원</span>
         </div>
       </div>
     </div>
 
-    <!-- ── 낙찰 ── -->
+    <!-- 낙찰 -->
     {% elif decision.outcome == 'win' %}
     <div class="text-center mb-8 fade-in-up delay-1">
       <div class="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-5 bounce-in">
@@ -94,7 +98,6 @@
       <h2 class="text-3xl font-black text-gray-900 mb-2">낙찰!</h2>
       <p class="text-gray-500 text-sm">입찰이 성공하였습니다.</p>
     </div>
-
     <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-8 fade-in-up delay-2">
       <div class="bg-gray-50/50 px-6 py-4 border-b border-gray-100">
         <p class="text-xs text-gray-400 font-bold uppercase tracking-wide">결제 정보</p>
@@ -102,20 +105,26 @@
       <div class="px-6 py-6">
         <div class="flex justify-between items-center pb-3 border-b border-gray-100">
           <span class="text-gray-500 font-medium text-sm">입찰가</span>
-          <span class="font-bold text-gray-800">{{ decision.bid_value|floatformat:0 }}원</span>
+          <span class="font-bold text-gray-800">{{ decision.bid_value|intcomma }}원</span>
         </div>
         <div class="flex justify-between items-center py-3 border-b border-gray-100">
-          <span class="text-gray-500 font-medium text-sm">수수료</span>
-          <span class="font-bold text-gray-800">{{ decision.c|floatformat:0 }}원</span>
+          <span class="text-gray-500 font-medium text-sm">이번 수수료</span>
+          <span class="font-bold text-[#EF4444]">{{ decision.c|intcomma }}원</span>
         </div>
+        {% if accumulated_fee > 0 %}
+        <div class="flex justify-between items-center py-3 border-b border-gray-100">
+          <span class="text-gray-500 font-medium text-sm">이전 라운드 누적 수수료</span>
+          <span class="font-bold text-[#EF4444]">{{ accumulated_fee|intcomma }}원</span>
+        </div>
+        {% endif %}
         <div class="flex justify-between items-center pt-4">
           <span class="font-bold text-gray-900">최종 지불 금액</span>
-          <span class="text-2xl font-black text-blue-600">{{ decision.paid_price|floatformat:0 }}원</span>
+          <span class="text-2xl font-black text-blue-600">{{ total_paid|intcomma }}원</span>
         </div>
       </div>
     </div>
 
-    <!-- ── 유찰 ── -->
+    <!-- 유찰 -->
     {% elif decision.outcome == 'lose' %}
     <div class="text-center mb-8 fade-in-up delay-1">
       <div class="w-24 h-24 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-5 bounce-in">
@@ -132,19 +141,28 @@
         {% endif %}
       </p>
     </div>
-
     <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6 fade-in-up delay-2">
       <div class="bg-gray-50/50 px-6 py-4 border-b border-gray-100">
         <p class="text-xs text-gray-400 font-bold uppercase tracking-wide">입찰 정보</p>
       </div>
       <div class="px-6 py-6">
-        <div class="flex justify-between items-center pb-4 border-b border-gray-100">
+        <div class="flex justify-between items-center pb-3 border-b border-gray-100">
           <span class="text-gray-500 font-medium text-sm">입찰가</span>
-          <span class="font-bold text-gray-800">{{ decision.bid_value|floatformat:0 }}원</span>
+          <span class="font-bold text-gray-800">{{ decision.bid_value|intcomma }}원</span>
         </div>
+        <div class="flex justify-between items-center py-3 border-b border-gray-100">
+          <span class="text-gray-500 font-medium text-sm">이번 수수료</span>
+          <span class="font-bold text-[#EF4444]">{{ decision.c|intcomma }}원</span>
+        </div>
+        {% if accumulated_fee > 0 %}
+        <div class="flex justify-between items-center py-3 border-b border-gray-100">
+          <span class="text-gray-500 font-medium text-sm">이전 라운드 누적 수수료</span>
+          <span class="font-bold text-[#EF4444]">{{ accumulated_fee|intcomma }}원</span>
+        </div>
+        {% endif %}
         <div class="flex justify-between items-center pt-4">
-          <span class="font-bold text-gray-900">지불 금액</span>
-          <span class="text-2xl font-black text-gray-400">0원</span>
+          <span class="font-bold text-gray-900">지금까지 지불 금액</span>
+          <span class="text-2xl font-black text-amber-600">{{ total_paid|intcomma }}원</span>
         </div>
       </div>
     </div>
@@ -155,7 +173,7 @@
         <div class="flex items-start gap-3">
           <i class="fas fa-info-circle text-blue-500 mt-0.5 shrink-0"></i>
           <p class="text-blue-700 text-sm leading-relaxed font-medium">
-            다음 라운드 최저입찰가는 <strong>{{ decision.bid_value|floatformat:0 }}원</strong>으로 변경됩니다.
+            다음 라운드 최저입찰가는 <strong>{{ decision.bid_value|intcomma }}원</strong>으로 변경됩니다.
           </p>
         </div>
       </div>
@@ -171,19 +189,16 @@
       {% endif %}
     {% endif %}
 
-    {% endif %}{# /outcome 분기 #}
+    {% endif %}
 
-    <!-- ── 버튼 영역 ── -->
+    <!-- 버튼 영역 -->
     <div class="space-y-3 fade-in-up delay-3">
-
       {% if is_practice %}
-        {# 연습게임 완료 → 본실험 시작 (메인) #}
         <a href="{{ start_real_url }}"
            class="btn-next w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 text-base">
           <i class="fas fa-play-circle"></i>
           본 실험 시작하기
         </a>
-        {# 연습 재시도 (서브) #}
         <a href="{{ retry_practice_url }}"
            class="btn-practice-retry w-full py-3.5 bg-white border-2 border-indigo-200 text-indigo-600 hover:bg-indigo-50 font-bold rounded-xl flex items-center justify-center gap-2 text-sm">
           <i class="fas fa-redo"></i>
@@ -196,7 +211,6 @@
           <i class="fas fa-arrow-right text-sm"></i>
         </a>
       {% endif %}
-
     </div>
 
   </div>
@@ -206,6 +220,12 @@
 {% block extra_js %}
 <script>
 (function () {
+  // 뒤로가기 차단
+  history.pushState(null, null, location.href);
+  window.addEventListener('popstate', () => {
+    history.pushState(null, null, location.href);
+  });
+
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       const btn = document.querySelector('.btn-next');

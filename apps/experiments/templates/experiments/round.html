@@ -52,7 +52,7 @@
   <!-- 전체 레이아웃 -->
   <div class="w-full {% if is_practice %}max-w-[1500px]{% else %}max-w-4xl{% endif %} mx-auto px-4 mt-8 flex justify-center gap-6 xl:gap-10">
 
-    <!-- 좌측 가이드 (연습 전용) -->
+    <!-- 좌측 가이드 (연습 전용, 데스크톱만) -->
     {% if is_practice %}
     <div class="hidden xl:flex flex-col w-[300px] shrink-0 space-y-6 pt-[120px]">
 
@@ -108,6 +108,20 @@
       </div>
       {% endif %}
 
+      <!-- 모바일 전용 Step 1 가이드 (선택 카드 위) -->
+      {% if is_practice %}
+      <div class="xl:hidden bg-[#EEF2FF] border-2 border-[#DBEAFE] rounded-2xl p-6 shadow-sm mb-6">
+        <h4 class="font-extrabold text-[#3730A3] flex items-center gap-2 mb-3 text-[15px]">
+          <i class="fas fa-book-open"></i> Step 1. 판매 희망 가격 확인
+        </h4>
+        <p class="text-[13px] text-gray-700 leading-relaxed mb-4">
+          화면에 판매자가 설정한 판매 희망 가격인 즉시 구매 가격이 제시됩니다. 참가자는 해당 가격을 확인한 후, 다음 두 가지 선택지 중 하나를 반드시 결정해야 합니다.
+        </p>
+        <p class="text-[13px] font-bold text-[#10B981] mb-1">Option 1. 즉시 구매</p>
+        <p class="text-[13px] font-bold text-[#5479F7]">Option 2. 경매 입찰 참여</p>
+      </div>
+      {% endif %}
+
       <!-- 상태 바 -->
       <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div class="flex items-center gap-5">
@@ -141,8 +155,8 @@
         </div>
       </div>
 
-      <!-- 가격 카드 3종 -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <!-- 가격 카드 2종 -->
+      <div class="grid grid-cols-2 gap-4 mb-8">
         <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 text-center">
           <p class="text-[13px] text-gray-500 font-bold mb-2">즉시구매가</p>
           <p class="font-extrabold text-[#10B981] text-3xl tracking-tight">
@@ -155,39 +169,61 @@
             {{ k|intcomma }}<span class="text-base font-bold ml-1 text-gray-500">원</span>
           </p>
         </div>
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 text-center">
-          <p class="text-[13px] text-gray-500 font-bold mb-2">수수료</p>
-          <p class="font-extrabold text-[#EF4444] text-3xl tracking-tight">
-            {{ c|intcomma }}<span class="text-base font-bold ml-1 text-gray-500">원</span>
-          </p>
-        </div>
       </div>
 
       <!-- 선택 카드 -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-[300px]">
 
         <!-- 즉시구매 -->
-        <form method="POST" action="{% if is_practice %}{% url 'experiments:practice_choice' %}{% else %}{% url 'experiments:make_choice' %}{% endif %}" class="h-full">
-          {% csrf_token %}
-          <input type="hidden" name="exp_no"   value="{{ exp_no }}">
-          <input type="hidden" name="round_no" value="{{ round_no }}">
-          {% if is_practice %}<input type="hidden" name="is_practice" value="1">{% endif %}
-          <input type="hidden" name="decision" value="buy">
-          <button type="submit"
-                  class="w-full h-full bg-white border-2 border-gray-200 rounded-3xl p-8 text-left hover:border-green-400 hover:shadow-lg transition-all group flex flex-col">
-            <div class="bg-green-100 p-3 rounded-full w-fit mb-6 text-green-500 group-hover:scale-110 transition-transform">
-              <i class="fas fa-check text-2xl"></i>
-            </div>
-            <h3 class="text-2xl font-extrabold text-gray-900 mb-4">Option 1. 즉시 구매하기</h3>
-            <p class="text-[15px] text-gray-600 mb-8 font-normal leading-relaxed">
-              경매 없이 제시된 가격으로 바로 구매하고 해당 회차를 종료합니다.
-            </p>
-            <div class="mt-auto border-t border-gray-100 pt-4 w-full">
-              <p class="text-xs text-gray-400 font-bold mb-1">판매자 제시 가격</p>
-              <p class="text-2xl font-black text-gray-900">{{ Ps|floatformat:0 }}<span class="text-sm font-normal text-gray-500 ml-1">원</span></p>
-            </div>
-          </button>
-        </form>
+        <div id="buyCard"
+             class="w-full h-full bg-white border-2 border-gray-200 rounded-3xl p-8 text-left transition-all flex flex-col cursor-pointer hover:border-green-400 hover:shadow-lg group"
+             onclick="showBuyConfirm()">
+
+          <div class="bg-green-100 p-3 rounded-full w-fit mb-6 text-green-500 group-hover:scale-110 transition-transform">
+            <i class="fas fa-check text-2xl"></i>
+          </div>
+          <h3 class="text-2xl font-extrabold text-gray-900 mb-4">Option 1. 즉시 구매하기</h3>
+          <p class="text-[15px] text-gray-600 mb-8 font-normal leading-relaxed">
+            경매 없이 제시된 가격으로 바로 구매하고 해당 회차를 종료합니다.
+          </p>
+          <div class="mt-auto border-t border-gray-100 pt-4 w-full">
+            <p class="text-xs text-gray-400 font-bold mb-1">판매자 제시 가격</p>
+            <p class="text-2xl font-black text-gray-900">{{ Ps|intcomma }}<span class="text-sm font-normal text-gray-500 ml-1">원</span></p>
+          </div>
+        </div>
+
+        <!-- 즉시구매 확인 카드 (클릭 후 표시) -->
+        <div id="buyConfirmCard"
+             class="hidden w-full h-full bg-green-50 border-2 border-green-400 rounded-3xl p-8 text-left flex flex-col shadow-lg">
+          <div class="bg-green-100 p-3 rounded-full w-fit mb-6 text-green-500">
+            <i class="fas fa-check text-2xl"></i>
+          </div>
+          <h3 class="text-2xl font-extrabold text-gray-900 mb-2">정말 즉시 구매하시겠습니까?</h3>
+          <p class="text-[14px] text-gray-500 mb-6 leading-relaxed">
+            아래 가격으로 구매가 확정되며 되돌릴 수 없습니다.
+          </p>
+          <div class="bg-white rounded-2xl p-5 mb-8 border border-green-200">
+            <p class="text-xs text-gray-400 font-bold mb-1">최종 구매 가격</p>
+            <p class="text-3xl font-black text-[#10B981]">{{ Ps|intcomma }}<span class="text-base font-normal text-gray-500 ml-1">원</span></p>
+          </div>
+          <div class="mt-auto flex gap-3">
+            <button type="button" onclick="hideBuyConfirm()"
+                    class="flex-1 py-4 rounded-xl font-bold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 transition-colors text-[15px]">
+              취소
+            </button>
+            <form method="POST" action="{% if is_practice %}{% url 'experiments:practice_choice' %}{% else %}{% url 'experiments:make_choice' %}{% endif %}" class="flex-[2]">
+              {% csrf_token %}
+              <input type="hidden" name="exp_no"   value="{{ exp_no }}">
+              <input type="hidden" name="round_no" value="{{ round_no }}">
+              {% if is_practice %}<input type="hidden" name="is_practice" value="1">{% endif %}
+              <input type="hidden" name="decision" value="buy">
+              <button type="submit"
+                      class="w-full py-4 rounded-xl font-bold text-white bg-[#10B981] hover:bg-[#059669] shadow-md transition-colors flex items-center justify-center gap-2 text-[15px]">
+                <i class="fas fa-check"></i> 구매 확정
+              </button>
+            </form>
+          </div>
+        </div>
 
         <!-- 입찰 -->
         <button type="button" id="openBidModal"
@@ -201,8 +237,11 @@
           </p>
           <div class="mt-auto border-t border-gray-100 pt-4 w-full flex justify-between items-end">
             <div>
+              <p class="font-extrabold text-[#EF4444] text-lg mb-1">
+                수수료 {{ c|intcomma }}원
+              </p>
               <p class="text-xs text-gray-400 font-bold mb-1">현재 최저 입찰 가능가</p>
-              <p class="text-2xl font-black text-[#5479F7]">{{ k|floatformat:0 }}<span class="text-sm font-normal text-gray-500 ml-1">원</span></p>
+              <p class="text-2xl font-black text-[#5479F7]">{{ k|intcomma }}<span class="text-sm font-normal text-gray-500 ml-1">원</span></p>
             </div>
             <div class="bg-[#E0E7FF] text-[#5479F7] p-3 rounded-full group-hover:bg-[#5479F7] group-hover:text-white transition-colors">
               <i class="fas fa-arrow-right"></i>
@@ -211,6 +250,40 @@
         </button>
 
       </div>
+
+      <!-- 모바일 전용 Step 2 가이드 (선택 카드 아래) -->
+      {% if is_practice %}
+      <div class="xl:hidden mt-6 space-y-4">
+        <div class="bg-[#EEF2FF] border-2 border-[#DBEAFE] rounded-2xl p-6 shadow-sm">
+          <h4 class="font-extrabold text-[#3730A3] flex items-center gap-2 mb-3 text-[15px]">
+            <i class="fas fa-book-open"></i> Step 2. 경매 입찰
+          </h4>
+          <p class="text-[14px] font-bold mb-2 text-[#5479F7]">Option 2 : 경매 입찰</p>
+          <p class="text-[13px] text-gray-700 leading-relaxed mb-3">
+            참가자가 입찰을 선택할 경우, 원하는 입찰 가격을 직접 입력해야 합니다.
+          </p>
+          <p class="text-[13px] text-gray-700 leading-relaxed mb-3">
+            입찰 가격 입력 후, 판매자의 거래 조건에 따라 해당 가격이 낙찰(거래 체결) / 유찰(거래 실패)로 결정됩니다.
+          </p>
+          <p class="text-[13px] text-gray-700 leading-relaxed mb-1">
+            입력한 가격이 판매자의 판매 기준을 충족할 경우 ⇒ <strong class="text-[#10B981]">낙찰</strong>
+          </p>
+          <p class="text-[13px] text-gray-700 leading-relaxed mb-4">
+            기준을 충족하지 못할 경우 ⇒ <strong class="text-[#E02424]">유찰</strong>
+          </p>
+          <p class="text-[11px] text-gray-400 font-medium">*판매자의 판매 기준은 화면에서 확인 불가능합니다.</p>
+        </div>
+
+        <div class="bg-[#EEF2FF] border-2 border-[#DBEAFE] rounded-2xl p-6 shadow-sm">
+          <h4 class="font-extrabold text-[#3730A3] flex items-center gap-2 mb-3 text-[15px]">
+            <i class="fas fa-book-open"></i> 수수료 구조
+          </h4>
+          <p class="text-[13px] text-gray-700 leading-relaxed">
+            각 실험 타입은 서로 다른 입찰 수수료 조건을 가지고 있습니다. 수수료는 입찰 참여 시마다 부과되며, 각 실험에서 적용되는 수수료는 화면에 명시될 예정입니다.
+          </p>
+        </div>
+      </div>
+      {% endif %}
 
       <!-- Rule -->
       <div class="bg-[#FFFDF0] p-6 rounded-2xl border border-[#FBEBA4] shadow-sm mt-8">
@@ -225,7 +298,7 @@
 
     </div>
 
-    <!-- 우측 가이드 (연습 전용) -->
+    <!-- 우측 가이드 (연습 전용, 데스크톱만) -->
     {% if is_practice %}
     <div class="hidden xl:flex flex-col w-[300px] shrink-0 pt-[350px] space-y-6">
 
@@ -265,13 +338,11 @@
 </div>
 
 <!-- 입찰 모달 -->
-<!-- 기존 모달 구조 변경 -->
-<div id="bidModal" class="modal-bg hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+<div id="bidModal" class="modal-bg hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm overflow-y-auto">
   
-  <!-- 모달 + 가이드 박스를 같은 row로 -->
-  <div class="flex items-start gap-4 w-full max-w-2xl">
+  <div class="flex items-start gap-4 w-full max-w-2xl justify-center my-auto">
     
-    <!-- 가이드 박스 (모달 왼쪽, 모바일에서는 숨김) -->
+    <!-- 가이드 박스 (모달 왼쪽, 데스크톱만) -->
     {% if is_practice %}
     <div class="hidden xl:block w-[280px] shrink-0 space-y-4">
       <div class="bg-[#EEF2FF] border-2 border-[#DBEAFE] rounded-2xl p-6 shadow-sm">
@@ -293,21 +364,24 @@
         </p>
         <p class="text-[11px] text-gray-400 font-medium">*판매자의 판매 기준은 화면에서 확인 불가능합니다.</p>
       </div>
-      <div class="bg-[#EEF2FF] border border-[#C7D2FE] rounded-xl p-4 mb-6 text-[#3730A3]">
-          <h4 class="font-extrabold flex items-center gap-2 mb-2 text-[13px]">
-            <i class="fas fa-book-open"></i> Step 3. 라운드 진행 규칙
-          </h4>
-          <p class="text-[12px] text-gray-700 leading-relaxed">
-            낙찰될 경우 → 해당 라운드에서 거래가 완료되며 회차 종료<br>
-            유찰될 경우 → 다음 라운드로 이동<br><br>
-            다음 라운드로 이동 시, 최저 입찰가는 이전 라운드에서 입력한 입찰 가격을 기준으로 갱신되며, 참가자는 다시 즉시 구매 또는 입찰 중 하나를 선택할 수 있습니다.
-          </p>
+      <div class="bg-[#EEF2FF] border border-[#C7D2FE] rounded-xl p-4 text-[#3730A3]">
+        <h4 class="font-extrabold flex items-center gap-2 mb-2 text-[13px]">
+          <i class="fas fa-book-open"></i> Step 3. 라운드 진행 규칙
+        </h4>
+        <p class="text-[12px] text-gray-700 leading-relaxed">
+          낙찰될 경우 → 해당 라운드에서 거래가 완료되며 회차 종료<br>
+          유찰될 경우 → 다음 라운드로 이동<br><br>
+          다음 라운드로 이동 시, 최저 입찰가는 이전 라운드에서 입력한 입찰 가격을 기준으로 갱신되며, 참가자는 다시 즉시 구매 또는 입찰 중 하나를 선택할 수 있습니다.
+        </p>
       </div>
     </div>
     {% endif %}
 
-    <!-- 모달 본체 -->
-    <div class="modal-box bg-white rounded-[24px] w-full max-w-md shadow-2xl overflow-hidden">
+    <!-- 모달 본체 + 모바일 가이드 묶음 -->
+    <div class="flex flex-col gap-4 w-full max-w-md">
+
+      <!-- 모달 본체 -->
+      <div class="modal-box bg-white rounded-[24px] w-full shadow-2xl overflow-hidden">
 
         <div class="px-6 py-5 flex items-center justify-between border-b border-gray-100">
           <div class="flex items-center gap-2 font-extrabold text-gray-900 text-[17px]">
@@ -319,8 +393,6 @@
         </div>
 
         <div class="p-8">
-          <!-- Step 3 안내 (모달 내부 상단) -->
-          
           <div class="text-center mb-8">
             <p class="text-[13px] text-gray-500 font-bold mb-2">현재 입찰가</p>
             <p class="text-[40px] font-extrabold text-gray-900 tracking-tight leading-none">
@@ -364,10 +436,47 @@
         </div>
       </div>
 
+      <!-- 모바일 전용 모달 하단 가이드 -->
+      {% if is_practice %}
+      <div class="xl:hidden space-y-4">
+        <div class="bg-white border border-[#C7D2FE] rounded-2xl p-6 shadow-lg">
+          <h4 class="font-extrabold text-[#3730A3] flex items-center gap-2 mb-3 text-[15px]">
+            <i class="fas fa-book-open"></i> Step 2. 경매 입찰
+          </h4>
+          <p class="text-[14px] font-bold mb-2 text-[#5479F7]">Option 2 : 경매 입찰</p>
+          <p class="text-[13px] text-gray-700 leading-relaxed mb-3">
+            참가자가 입찰을 선택할 경우, 원하는 입찰 가격을 직접 입력해야 합니다.
+          </p>
+          <p class="text-[13px] text-gray-700 leading-relaxed mb-3">
+            입찰 가격 입력 후, 판매자의 거래 조건에 따라 해당 가격이 낙찰(거래 체결) / 유찰(거래 실패)로 결정됩니다.
+          </p>
+          <p class="text-[13px] text-gray-700 leading-relaxed mb-1">
+            입력한 가격이 판매자의 판매 기준을 충족할 경우 ⇒ <strong class="text-[#10B981]">낙찰</strong>
+          </p>
+          <p class="text-[13px] text-gray-700 leading-relaxed mb-4">
+            기준을 충족하지 못할 경우 ⇒ <strong class="text-[#E02424]">유찰</strong>
+          </p>
+          <p class="text-[11px] text-gray-400 font-medium">*판매자의 판매 기준은 화면에서 확인 불가능합니다.</p>
+        </div>
+        <div class="bg-white border border-[#C7D2FE] rounded-2xl p-6 shadow-lg">
+          <h4 class="font-extrabold text-[#3730A3] flex items-center gap-2 mb-3 text-[15px]">
+            <i class="fas fa-book-open"></i> Step 3. 라운드 진행 규칙
+          </h4>
+          <p class="text-[13px] text-gray-700 leading-relaxed mb-2">
+            낙찰될 경우 → 해당 라운드에서 거래가 완료되며 회차 종료
+          </p>
+          <p class="text-[13px] text-gray-700 leading-relaxed mb-2">
+            유찰될 경우 → 다음 라운드로 이동
+          </p>
+          <p class="text-[13px] text-gray-700 leading-relaxed">
+            다음 라운드로 이동 시, 최저 입찰가는 이전 라운드에서 입력한 입찰 가격을 기준으로 갱신되며, 참가자는 다시 즉시 구매 또는 입찰 중 하나를 선택할 수 있습니다.
+          </p>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
   </div>
-</div>
-<div id="bidModal" class="modal-bg hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-  
 </div>
 
 <div id="toastContainer" class="fixed top-20 right-5 z-[9999] flex flex-col gap-2 max-w-xs w-full"></div>
@@ -383,6 +492,7 @@
     max:        {{ Ps }},
     step:       {{ step }},
     commission: {{ c }},
+    accumulated_fee: {{ accumulated_fee }}, 
     exp_no:     {{ exp_no }},
     round_no:   {{ round_no }},
     isPractice: {% if is_practice %}true{% else %}false{% endif %}
@@ -431,14 +541,10 @@
     currentBid = config.min;
     updateDisplay();
     modal.classList.remove('hidden');
-    const step3 = document.getElementById('step3Guide');
-    if (step3) step3.classList.remove('hidden');  // ← 추가
   }
 
   function closeModal() {
     modal.classList.add('hidden');
-    const step3 = document.getElementById('step3Guide');
-    if (step3) step3.classList.add('hidden');  // ← 추가
   }
 
   openBtn.addEventListener('click', openModal);
@@ -461,7 +567,13 @@
   });
 
   submitBtn.addEventListener('click', function () {
-    if (!confirm(`${fmt(currentBid)}원으로 입찰하시겠습니까?\n\n낙찰 시 총 비용: ${fmt(currentBid + config.commission)}원`)) return;
+    if (!confirm(
+      `${fmt(currentBid)}원으로 입찰하시겠습니까?\n\n` +
+      `※ 전체 누적 비용: ${fmt(currentBid + config.commission + config.accumulated_fee)}원\n` +
+      (config.accumulated_fee > 0
+        ? `※ 이전 라운드 누적 수수료: ${fmt(config.accumulated_fee)}원\n`
+        : ``)
+    )) return;
 
     const form = document.createElement('form');
     form.method = 'POST';
@@ -490,6 +602,23 @@
   });
 
   updateDisplay();
+  // 뒤로가기 차단
+  history.pushState(null, null, location.href);
+  window.addEventListener('popstate', () => {
+    history.pushState(null, null, location.href);
+  });
+
 })();
+
+function showBuyConfirm() {
+  document.getElementById('buyCard').classList.add('hidden');
+  document.getElementById('buyConfirmCard').classList.remove('hidden');
+  document.getElementById('buyConfirmCard').classList.add('flex');
+}
+function hideBuyConfirm() {
+  document.getElementById('buyConfirmCard').classList.add('hidden');
+  document.getElementById('buyConfirmCard').classList.remove('flex');
+  document.getElementById('buyCard').classList.remove('hidden');
+}
 </script>
 {% endblock %}

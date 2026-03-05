@@ -6,6 +6,8 @@ from django.views.decorators.http import require_http_methods
 from django.contrib import messages
 from apps.participants.models import Participant
 from .models import RoundDecision
+from django.views.decorators.cache import never_cache
+from django.db.models import Sum
 from .config import (
     MAX_EXP, MAX_ROUND, MAX_TYPE, PS, K_INITIAL, STEP,
     TYPE_CONFIGS, get_exp_config, get_type_no, get_repeat_no,
@@ -44,7 +46,7 @@ def _get_min_bid(participant_id, exp_no, round_no):
 
     return K_INITIAL
 
-
+@never_cache
 @require_http_methods(["GET"])
 def round_view(request, exp_no, round_no):
     """라운드 화면"""
@@ -87,6 +89,13 @@ def round_view(request, exp_no, round_no):
     request.session['current_exp'] = exp_no
     request.session['current_round'] = round_no
 
+    # 누적 수수료 계산 (현재 실험에서 유찰된 라운드들의 수수료 합산)
+    accumulated_fee = RoundDecision.objects.filter(
+        participant=participant,
+        exp_no=exp_no,
+        outcome='lose'
+    ).aggregate(total=Sum('c'))['total'] or 0
+
     context = {
         'no_bootstrap': True,
         'is_practice': False,
@@ -99,6 +108,7 @@ def round_view(request, exp_no, round_no):
         'c': config['c'],
         'step': STEP,
         'participant': participant,
+        'accumulated_fee': accumulated_fee,
     }
     return render(request, 'experiments/round.html', context)
 
@@ -161,7 +171,7 @@ def make_choice(request):
             paid_price = bid_amount + c  # 낙찰: 입찰가 + 수수료
         else:
             outcome = 'lose'
-            paid_price = 0
+            paid_price = c
 
         rd = RoundDecision.objects.create(
             participant=participant,
@@ -181,7 +191,7 @@ def make_choice(request):
     messages.error(request, '올바른 선택을 해주세요.')
     return redirect(reverse('experiments:round', kwargs={'exp_no': exp_no, 'round_no': round_no}))
 
-
+@never_cache
 @require_http_methods(["GET"])
 def result_view(request, decision_id):
     """결과 화면"""
@@ -198,9 +208,11 @@ def result_view(request, decision_id):
     round_no = decision.round_no
     acquired = decision.outcome in ['bought', 'win']
 
+    # 5라운드 유찰 → 강제구매 여부
+    is_forced_buy = (not acquired and round_no >= MAX_ROUND)
+
     # 다음 단계 결정
     if acquired or round_no >= MAX_ROUND:
-        # 구매/낙찰 완료 OR 5라운드 모두 유찰 → 다음 실험
         if exp_no < MAX_EXP:
             next_url = reverse('experiments:round', kwargs={'exp_no': exp_no + 1, 'round_no': 1})
             next_label = f"실험 {exp_no + 1} 시작"
@@ -208,9 +220,22 @@ def result_view(request, decision_id):
             next_url = reverse('experiments:done')
             next_label = "실험 종료"
     else:
-        # 유찰 → 다음 라운드
         next_url = reverse('experiments:round', kwargs={'exp_no': exp_no, 'round_no': round_no + 1})
         next_label = f"라운드 {round_no + 1}"
+
+    # 누적 지불 금액 계산
+    past_decisions = RoundDecision.objects.filter(
+        participant=participant,
+        exp_no=exp_no,
+        round_no__lt=round_no
+    )
+    accumulated_fee = sum(d.paid_price for d in past_decisions)
+
+    if is_forced_buy:
+        # 5라운드 유찰: 이번 수수료 + 이전 누적 + 강제구매가(PS)
+        total_paid = accumulated_fee + decision.paid_price + PS
+    else:
+        total_paid = decision.paid_price + accumulated_fee
 
     context = {
         'no_bootstrap': True,
@@ -223,9 +248,12 @@ def result_view(request, decision_id):
         'next_url': next_url,
         'next_label': next_label,
         'acquired': acquired,
+        'accumulated_fee': accumulated_fee,
+        'total_paid': total_paid,
+        'is_forced_buy': is_forced_buy,
+        'PS': PS,
     }
     return render(request, 'experiments/result.html', context)
-
 
 @require_http_methods(["GET"])
 def done_view(request):
@@ -309,7 +337,7 @@ PRACTICE_K    = 80_000    # 최저입찰가
 PRACTICE_C    = 3_000     # 수수료
 PRACTICE_STEP = 1_000
 
-
+@never_cache
 @require_http_methods(["GET"])
 def practice_round_view(request, round_no=1):
     """
@@ -338,6 +366,7 @@ def practice_round_view(request, round_no=1):
         'c':           PRACTICE_C,
         'step':        PRACTICE_STEP,
         'participant': participant,
+        'accumulated_fee': 0,
     }
     return render(request, 'experiments/round.html', context)
 
@@ -390,7 +419,7 @@ def practice_choice(request):
             request.session.pop('practice_min_bid', None)
         else:
             outcome    = 'lose'
-            paid_price = 0
+            paid_price = PRACTICE_C
             # 유찰: 다음 라운드 최저입찰가 업데이트
             request.session['practice_min_bid'] = bid_amount
 
@@ -407,13 +436,9 @@ def practice_choice(request):
     messages.error(request, '올바른 선택을 해주세요.')
     return redirect(reverse('experiments:practice_round', kwargs={'round_no': round_no}))
 
-
+@never_cache
 @require_http_methods(["GET"])
 def practice_result_view(request):
-    """
-    0라운드(연습게임) 결과 화면.
-    세션에서 결과를 읽어 result.html을 is_practice=True 로 렌더링.
-    """
     participant = _get_participant(request)
     if not participant:
         return redirect('core:home')
@@ -422,7 +447,6 @@ def practice_result_view(request):
     if not result:
         return redirect(reverse('experiments:practice_round', kwargs={'round_no': 1}))
 
-    # result.html 이 기대하는 decision 오브젝트를 dict-like 객체로 흉내냄
     class PracticeDecision:
         def __init__(self, d):
             self.outcome    = d['outcome']
@@ -431,16 +455,27 @@ def practice_result_view(request):
             self.c          = d['c']
             self.paid_price = d['paid_price']
 
-    round_no  = result['round_no']
-    outcome   = result['outcome']
-    acquired  = outcome in ('bought', 'win')
+    round_no = result['round_no']
+    outcome  = result['outcome']
+    acquired = outcome in ('bought', 'win')
 
-    # 유찰이고 아직 라운드가 남아있다면 다음 연습 라운드로
+    # 누적 수수료: 세션에 누적값 저장
+    accumulated_fee = request.session.get('practice_accumulated_fee', 0)
+    total_paid = result['paid_price'] + accumulated_fee
+
+    # 이번 라운드 paid_price를 누적에 추가 (다음 라운드를 위해)
+    request.session['practice_accumulated_fee'] = accumulated_fee + result['paid_price']
+
+    # 연습 완료 or 본실험 시작 시 누적 초기화
+    if acquired:
+        request.session['practice_accumulated_fee'] = 0
+
     if not acquired and round_no < 5:
         next_round = round_no + 1
         retry_url  = reverse('experiments:practice_round', kwargs={'round_no': next_round})
     else:
         retry_url  = reverse('experiments:practice_round', kwargs={'round_no': 1})
+        request.session['practice_accumulated_fee'] = 0
 
     context = {
         'no_bootstrap': True,
@@ -449,9 +484,9 @@ def practice_result_view(request):
         'exp_no':             0,
         'round_no':           round_no,
         'max_round':          5,
-        # 본실험 시작 URL
+        'accumulated_fee':    accumulated_fee,
+        'total_paid':         total_paid,
         'start_real_url':     reverse('experiments:round', kwargs={'exp_no': 1, 'round_no': 1}),
-        # 연습 재시도 URL (결과에 따라 다음 라운드 or 처음부터)
         'retry_practice_url': retry_url,
     }
     return render(request, 'experiments/result.html', context)
