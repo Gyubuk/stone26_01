@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}경매 실험{% endblock %}</title>
+    <title>{% block title %}한정판 리셀 경매 의사결정 실험 | MRA Lab{% endblock %}</title>
+    
+    {% load static %}
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{% static 'images/mralogo.png' %}">
     
     <!-- Bootstrap CSS (Tailwind 페이지에서는 제외) -->
     {% if not no_bootstrap %}
