@@ -164,7 +164,7 @@ def make_choice(request):
             messages.error(request, f'입찰가는 {min_bid:,}원 ~ {PS:,}원 사이여야 합니다.')
             return redirect(reverse('experiments:round', kwargs={'exp_no': exp_no, 'round_no': round_no}))
 
-        market_price = generate_market_price(exp_no, round_no)
+        market_price = generate_market_price(exp_no, participant.id)
 
         if bid_amount >= market_price:
             outcome = 'win'

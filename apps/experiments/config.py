@@ -51,13 +51,13 @@ def get_exp_config(exp_no):
     return TYPE_CONFIGS[type_no]
 
 
-def generate_market_price(exp_no, round_no):
+def generate_market_price(exp_no, participant_id):
     """
-    Beta 분포로 시장가 생성 (시드 고정 → 재현 가능)
-    짠돌이: beta(5,2) → 높은 시장가 (낙찰 어려움)
-    안짠돌이: beta(2,5) → 낮은 시장가 (낙찰 쉬움)
+    - 같은 exp_no + participant_id → 항상 같은 시장가 (round_no 무시)
+    - exp_no가 다르면 다른 시장가
+    - participant_id가 다르면 다른 시장가
     """
-    seed = exp_no * 100 + round_no
+    seed = participant_id * 10000 + exp_no
     rng = np.random.default_rng(seed)
 
     config = get_exp_config(exp_no)
