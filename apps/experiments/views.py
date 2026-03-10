@@ -366,7 +366,7 @@ def practice_round_view(request, round_no=1):
         'c':           PRACTICE_C,
         'step':        PRACTICE_STEP,
         'participant': participant,
-        'accumulated_fee': 0,
+        'accumulated_fee': request.session.get('practice_accumulated_fee', 0),
     }
     return render(request, 'experiments/round.html', context)
 
@@ -413,23 +413,30 @@ def practice_choice(request):
         accept_threshold = int(PRACTICE_PS * 0.90)
         is_last_round    = (round_no >= 5)
 
-        if bid_amount >= accept_threshold or (is_last_round and bid_amount >= min_bid):
+        if bid_amount >= accept_threshold:
             outcome    = 'win'
             paid_price = bid_amount + PRACTICE_C
+            is_forced_buy = False
+            request.session.pop('practice_min_bid', None)
+        elif is_last_round:
+            outcome    = 'lose'
+            paid_price = PRACTICE_PS
+            is_forced_buy = True
             request.session.pop('practice_min_bid', None)
         else:
             outcome    = 'lose'
             paid_price = PRACTICE_C
-            # 유찰: 다음 라운드 최저입찰가 업데이트
+            is_forced_buy = False
             request.session['practice_min_bid'] = bid_amount
 
         request.session['practice_result'] = {
-            'outcome':    outcome,
-            'round_no':   round_no,
-            'Ps':         PRACTICE_PS,
-            'bid_value':  bid_amount,
-            'c':          PRACTICE_C,
-            'paid_price': paid_price,
+            'outcome':       outcome,
+            'round_no':      round_no,
+            'Ps':            PRACTICE_PS,
+            'bid_value':     bid_amount,
+            'c':             PRACTICE_C,
+            'paid_price':    paid_price,
+            'is_forced_buy': is_forced_buy,
         }
         return redirect(reverse('experiments:practice_result'))
 
@@ -449,28 +456,36 @@ def practice_result_view(request):
 
     class PracticeDecision:
         def __init__(self, d):
-            self.outcome    = d['outcome']
-            self.Ps         = d['Ps']
-            self.bid_value  = d['bid_value']
-            self.c          = d['c']
-            self.paid_price = d['paid_price']
+            self.outcome       = d['outcome']
+            self.Ps            = d.get('Ps', 0)
+            self.bid_value     = d.get('bid_value', 0)
+            self.c             = d.get('c', 0)
+            self.paid_price    = d.get('paid_price', 0)
+            self.is_forced_buy = d.get('is_forced_buy', False)
 
-    round_no = result['round_no']
-    outcome  = result['outcome']
-    acquired = outcome in ('bought', 'win')
+    round_no      = result['round_no']
+    outcome       = result['outcome']
+    acquired      = outcome in ('bought', 'win')
+    is_forced_buy = result.get('is_forced_buy', False)
 
-    # 누적 수수료: 세션에 누적값 저장
     accumulated_fee = request.session.get('practice_accumulated_fee', 0)
-    total_paid = result['paid_price'] + accumulated_fee
 
-    # 이번 라운드 paid_price를 누적에 추가 (다음 라운드를 위해)
-    request.session['practice_accumulated_fee'] = accumulated_fee + result['paid_price']
+    if is_forced_buy:
+        total_paid = accumulated_fee + result.get('c', 0) + result.get('Ps', 0)
+    elif outcome == 'lose':
+        total_paid = accumulated_fee + result.get('c', 0)
+    elif outcome == 'win':
+        total_paid = accumulated_fee + result.get('bid_value', 0) + result.get('c', 0)
+    else:  # bought
+        total_paid = accumulated_fee + result.get('Ps', 0)
 
-    # 연습 완료 or 본실험 시작 시 누적 초기화
-    if acquired:
+    # 다음 라운드 누적 업데이트
+    if outcome == 'lose' and not is_forced_buy:
+        request.session['practice_accumulated_fee'] = accumulated_fee + result.get('c', 0)
+    else:
         request.session['practice_accumulated_fee'] = 0
 
-    if not acquired and round_no < 5:
+    if not acquired and not is_forced_buy and round_no < 5:
         next_round = round_no + 1
         retry_url  = reverse('experiments:practice_round', kwargs={'round_no': next_round})
     else:
@@ -478,7 +493,7 @@ def practice_result_view(request):
         request.session['practice_accumulated_fee'] = 0
 
     context = {
-        'no_bootstrap': True,
+        'no_bootstrap':       True,
         'is_practice':        True,
         'decision':           PracticeDecision(result),
         'exp_no':             0,
@@ -486,6 +501,8 @@ def practice_result_view(request):
         'max_round':          5,
         'accumulated_fee':    accumulated_fee,
         'total_paid':         total_paid,
+        'is_forced_buy':      is_forced_buy,
+        'Ps':                 result.get('Ps', 0),
         'start_real_url':     reverse('experiments:round', kwargs={'exp_no': 1, 'round_no': 1}),
         'retry_practice_url': retry_url,
     }

@@ -147,27 +147,11 @@
       <div class="w-full mt-6 mb-8">
         <div class="w-full bg-gray-200 rounded-full h-[6px] mb-2">
           <div class="progress-fill h-[6px] rounded-full bg-[#5479F7]"
-               style="width: {{ round_no }}0%"></div>
+               style="width: {% widthratio round_no max_round 100 %}%"></div>
         </div>
         <div class="flex justify-between text-[11px] text-gray-400 font-medium">
           <span>Round 1</span>
           <span>Round {{ max_round }} (종료)</span>
-        </div>
-      </div>
-
-      <!-- 가격 카드 2종 -->
-      <div class="grid grid-cols-2 gap-4 mb-8">
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 text-center">
-          <p class="text-[13px] text-gray-500 font-bold mb-2">즉시구매가</p>
-          <p class="font-extrabold text-[#10B981] text-3xl tracking-tight">
-            {{ Ps|intcomma }}<span class="text-base font-bold ml-1 text-gray-500">원</span>
-          </p>
-        </div>
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 text-center">
-          <p class="text-[13px] text-gray-500 font-bold mb-2">최저입찰가</p>
-          <p class="font-extrabold text-[#F59E0B] text-3xl tracking-tight">
-            {{ k|intcomma }}<span class="text-base font-bold ml-1 text-gray-500">원</span>
-          </p>
         </div>
       </div>
 
@@ -184,7 +168,7 @@
           </div>
           <h3 class="text-2xl font-extrabold text-gray-900 mb-4">Option 1. 즉시 구매하기</h3>
           <p class="text-[15px] text-gray-600 mb-8 font-normal leading-relaxed">
-            경매 없이 제시된 가격으로 바로 구매하고 해당 회차를 종료합니다.
+            판매자가 제시한 즉시구매가로 바로 구매가 확정되며, 해당 회차가 종료됩니다.
           </p>
           <div class="mt-auto border-t border-gray-100 pt-4 w-full">
             <p class="text-xs text-gray-400 font-bold mb-1">판매자 제시 가격</p>

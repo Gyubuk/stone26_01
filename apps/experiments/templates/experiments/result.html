@@ -125,6 +125,7 @@
     </div>
 
     <!-- 유찰 -->
+    <!-- 유찰 -->
     {% elif decision.outcome == 'lose' %}
     <div class="text-center mb-8 fade-in-up delay-1">
       <div class="w-24 h-24 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-5 bounce-in">
@@ -141,6 +142,7 @@
         {% endif %}
       </p>
     </div>
+
     <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6 fade-in-up delay-2">
       <div class="bg-gray-50/50 px-6 py-4 border-b border-gray-100">
         <p class="text-xs text-gray-400 font-bold uppercase tracking-wide">입찰 정보</p>
@@ -160,8 +162,16 @@
           <span class="font-bold text-[#EF4444]">{{ accumulated_fee|intcomma }}원</span>
         </div>
         {% endif %}
+        {% if is_forced_buy %}
+        <div class="flex justify-between items-center py-3 border-b border-gray-100">
+          <span class="text-gray-500 font-medium text-sm">판매자 제시가 자동 구매</span>
+          <span class="font-bold text-amber-600">{{ Ps|intcomma }}원</span>
+        </div>
+        {% endif %}
         <div class="flex justify-between items-center pt-4">
-          <span class="font-bold text-gray-900">지금까지 지불 금액</span>
+          <span class="font-bold text-gray-900">
+            {% if is_forced_buy %}수수료 포함 총 지불 금액{% else %}지금까지 지불 금액{% endif %}
+          </span>
           <span class="text-2xl font-black text-amber-600">{{ total_paid|intcomma }}원</span>
         </div>
       </div>
@@ -182,7 +192,22 @@
         <div class="flex items-start gap-3">
           <i class="fas fa-exclamation-triangle text-amber-500 mt-0.5 shrink-0"></i>
           <p class="text-amber-700 text-sm leading-relaxed font-medium">
-            5라운드가 모두 종료되었습니다. 다음 실험으로 넘어갑니다.
+            {% if is_forced_buy %}
+              판매자 제시가({{ Ps|intcomma }}원)로 자동 구매되었습니다.
+            {% else %}
+              5라운드가 모두 종료되었습니다. 다음 실험으로 넘어갑니다.
+            {% endif %}
+          </p>
+        </div>
+      </div>
+      {% endif %}
+    {% else %}
+      {% if is_forced_buy %}
+      <div class="bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 mb-8 fade-in-up delay-2">
+        <div class="flex items-start gap-3">
+          <i class="fas fa-exclamation-triangle text-amber-500 mt-0.5 shrink-0"></i>
+          <p class="text-amber-700 text-sm leading-relaxed font-medium">
+            판매자 제시가({{ Ps|intcomma }}원)로 자동 구매되었습니다.
           </p>
         </div>
       </div>
