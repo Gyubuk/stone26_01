@@ -128,3 +128,8 @@ TIME_ZONE = 'Asia/Seoul'
 # Media files (파일 업로드용, 선택사항)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://dolmeng.xyz',
+    'http://dolmeng.xyz',
+]
