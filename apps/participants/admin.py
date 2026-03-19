@@ -3,8 +3,8 @@ from .models import Participant
 
 @admin.register(Participant)
 class ParticipantAdmin(admin.ModelAdmin):
-    list_display = ['id', 'code', 'gender', 'age', 'risk', 'lottery', 'exp', 'created_at']
-    list_filter = ['gender', 'risk', 'lottery', 'exp', 'created_at']
+    list_display = ['id', 'code', 'gender', 'age', 'risk', 'lottery_step1', 'lottery_step2', 'lottery_step3', 'exp', 'created_at']
+    list_filter = ['gender', 'risk', 'exp', 'created_at']
     search_fields = ['code', 'phone', 'product']
     readonly_fields = ['code', 'created_at']
     
@@ -19,6 +19,6 @@ class ParticipantAdmin(admin.ModelAdmin):
             'fields': ('product',)
         }),
         ('성향 측정', {
-            'fields': ('risk', 'lottery', 'exp')
+            'fields': ('risk', 'lottery_step1', 'lottery_step2', 'lottery_step3', 'exp')
         }),
     )

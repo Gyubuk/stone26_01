@@ -1,5 +1,3 @@
-# apps/participants/views.py
-
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from .models import Participant
@@ -20,7 +18,9 @@ def trait(request):
 
     if request.method == "POST":
         product = request.POST.get("product", "").strip()
-        lottery_raw = request.POST.get("expected_price_raw", "").strip()
+        step1_raw = request.POST.get("risk_step1_raw", "").strip()
+        step2_raw = request.POST.get("risk_step2_raw", "").strip()
+        step3_raw = request.POST.get("risk_step3_raw", "").strip()
 
         if not product:
             return render(request, "participants/trait.html", {
@@ -28,15 +28,17 @@ def trait(request):
                 "participant": participant
             })
 
-        if not lottery_raw:
+        if not step1_raw or not step2_raw or not step3_raw:
             return render(request, "participants/trait.html", {
-                "error": "위험 성향 측정 금액을 입력해주세요.",
+                "error": "위험 성향 측정 금액을 모두 입력해주세요.",
                 "participant": participant
             })
 
         try:
-            lottery_value = int(lottery_raw)
-            if lottery_value < 0:
+            step1_value = int(step1_raw)
+            step2_value = int(step2_raw)
+            step3_value = int(step3_raw)
+            if any(v < 0 for v in [step1_value, step2_value, step3_value]):
                 raise ValueError
         except (ValueError, TypeError):
             return render(request, "participants/trait.html", {
@@ -46,7 +48,9 @@ def trait(request):
 
         try:
             participant.product = product
-            participant.lottery = lottery_value
+            participant.lottery_step1 = step1_value
+            participant.lottery_step2 = step2_value
+            participant.lottery_step3 = step3_value
             participant.save()
 
             return redirect('experiments:practice_round_start')

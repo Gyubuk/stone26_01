@@ -70,6 +70,127 @@
       box-shadow: none;
     }
 
+    /* 금액 입력 필드 */
+    .money-input-wrap {
+      display: flex;
+      align-items: center;
+      background: white;
+      border: 1.5px solid #d1d5db;
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-top: 12px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .money-input-wrap:focus-within {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+    }
+    .money-input-wrap .won-icon {
+      color: #9ca3af;
+      font-size: 1rem;
+      font-weight: 700;
+      margin-right: 8px;
+    }
+    .money-input-wrap input {
+      flex: 1;
+      outline: none;
+      border: none;
+      background: transparent;
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #111827;
+      text-align: right;
+      letter-spacing: 0.02em;
+    }
+    .money-input-wrap input::placeholder { color: #9ca3af; font-weight: 400; }
+    .money-input-wrap .unit {
+      color: #4b5563;
+      font-weight: 700;
+      margin-left: 8px;
+      white-space: nowrap;
+      font-size: 0.9rem;
+    }
+
+    /* 단계 박스 */
+    .step-box {
+      border: 1.5px solid #e5e7eb;
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .step-header {
+      background: #f8f9ff;
+      padding: 14px 20px;
+      border-bottom: 1.5px solid #e5e7eb;
+    }
+    .step-header .step-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #4f46e5;
+    }
+    .step-body {
+      padding: 18px 20px;
+      background: white;
+    }
+    .step-question {
+      background: #eef2ff;
+      border-radius: 10px;
+      padding: 14px 16px;
+      color: #1e1b4b;
+      font-size: 0.88rem;
+      font-weight: 600;
+      line-height: 1.6;
+    }
+
+    /* 게임 안내 박스 */
+    .game-intro-box {
+      background: #f8f9ff;
+      border: 1.5px solid #e0e7ff;
+      border-radius: 14px;
+      padding: 20px 22px;
+      display: flex;
+      gap: 18px;
+      align-items: flex-start;
+      margin-bottom: 22px;
+    }
+    .game-intro-box .icon-wrap {
+      background: #e0e7ff;
+      border-radius: 50%;
+      width: 52px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .game-intro-box .icon-wrap i {
+      color: #6366f1;
+      font-size: 1.4rem;
+    }
+
+    /* 금액 배지 */
+    .amount-badge-blue {
+      display: inline;
+      color: #4f46e5;
+      font-weight: 700;
+    }
+    .amount-badge-red {
+      display: inline;
+      color: #ef4444;
+      font-weight: 700;
+    }
+    .step-ref-badge {
+      display: inline-block;
+      background: #e5e7eb;
+      color: #374151;
+      font-size: 0.78rem;
+      font-weight: 700;
+      border-radius: 6px;
+      padding: 1px 8px;
+      vertical-align: middle;
+    }
+
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: #f1f5f9; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -87,9 +208,6 @@
   </div>
 
   <div class="max-w-2xl mx-auto px-4 py-10 pb-20">
-
-    <!-- 페이지 타이틀 -->
-    
 
     <!-- 에러 메시지 -->
     {% if error %}
@@ -184,24 +302,85 @@
             </li>
           </ul>
 
-          <!-- 복권 질문 박스 -->
-          <div class="bg-gray-50 border border-gray-200 rounded-xl p-6 flex flex-col sm:flex-row gap-5 items-start">
-            <div class="bg-blue-100 rounded-full p-4 flex items-center justify-center shrink-0 self-start">
-              <i class="fas fa-credit-card text-blue-500 text-2xl"></i>
+          <!-- 게임 안내 박스 -->
+          <div class="game-intro-box">
+            <div class="icon-wrap">
+              <i class="fas fa-gamepad"></i>
             </div>
-            <div class="flex-1 w-full">
-              <p class="text-gray-900 font-medium mb-1 leading-relaxed text-sm">
-                당첨 시 상금 1억 원, 당첨 확률 30%인 복권이 있습니다.
-                이 복권을 최대 얼마까지 지불하고 구매하시겠습니까?
-                <span class="text-gray-400 text-xs ml-1">(단위: 만원)</span>
+            <div>
+              <p class="text-gray-900 font-bold text-sm mb-1">예능 프로그램 컨셉의 상금 게임</p>
+              <p class="text-gray-600 text-sm leading-relaxed">
+                개인의 성향을 파악하기 위해 가상의 동전 던지기 게임을 진행합니다. 주어진 상황을 읽고, 본인이라면 <strong>최소 얼마의 확정 상금</strong>을 받을 때 게임을 포기할지 직관적으로 입력해주세요.
               </p>
-              <!-- 만원 단위 입력 -->
-              <div class="flex items-center bg-white border border-gray-300 rounded-xl px-4 py-3 mt-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all w-full">
-                <input type="text" name="expected_price_raw" id="riskInput"
-                       class="flex-1 outline-none text-gray-900 placeholder-gray-400 text-sm bg-transparent font-bold text-right tracking-wide"
-                       placeholder="예: 3,000"
-                       oninput="formatRisk(this)" required>
-                <span class="text-gray-600 font-bold ml-2 whitespace-nowrap text-sm">만 원</span>
+            </div>
+          </div>
+
+          <!-- 1단계 -->
+          <div class="step-box">
+            <div class="step-header">
+              <span class="step-title">1단계 : 중간 지점 찾기</span>
+            </div>
+            <div class="step-body">
+              <p class="text-gray-700 text-sm leading-relaxed mb-4">
+                눈앞에 동전 던지기 게임이 있습니다. 앞면이 나오면 <span class="amount-badge-blue">1,000만 원</span>, 뒷면이 나오면 <span class="amount-badge-red">0원</span>을 받습니다.<br>
+                그런데 주최자가 다가와서 제안합니다. <strong>"지금 이 게임을 포기하시면, 제가 바로 확정 상금을 드리겠습니다."</strong>
+              </p>
+              <div class="step-question">
+                최소 얼마를 주면 미련 없이 동전 던지기를 포기하고 그 돈을 챙기시겠습니까?
+              </div>
+              <div class="money-input-wrap">
+                <span class="won-icon">₩</span>
+                <input type="text" name="risk_step1" id="step1Input"
+                       placeholder="예: 400  "
+                       oninput="formatMoney(this, 'step1Raw')" required>
+                <input type="hidden" id="step1Raw" name="risk_step1_raw">
+                <span class="unit">만 원</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2단계 -->
+          <div class="step-box">
+            <div class="step-header">
+              <span class="step-title">2단계 : 상위 구간 찾기</span>
+            </div>
+            <div class="step-body">
+              <p class="text-gray-700 text-sm leading-relaxed mb-4">
+                앞면이 나오면 <span class="amount-badge-blue">1,000만 원</span>, 뒷면이 나와도 <span class="step-ref-badge" id="step1RefBadge">1단계 금액</span>을 보장해 드립니다. 주최자가 다시 다가와서 게임을 포기하라고 유혹합니다.
+              </p>
+              <div class="step-question">
+                이 유리한 게임을 포기하는 대가로, 이번에는 최소 얼마를 요구하시겠습니까?
+              </div>
+              <div class="money-input-wrap">
+                <span class="won-icon">₩</span>
+                <input type="text" name="risk_step2" id="step2Input"
+                       placeholder="금액 입력  "
+                       oninput="formatMoney(this, 'step2Raw')" required>
+                <input type="hidden" id="step2Raw" name="risk_step2_raw">
+                <span class="unit">만 원</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3단계 -->
+          <div class="step-box">
+            <div class="step-header">
+              <span class="step-title">3단계 : 하위 구간 찾기</span>
+            </div>
+            <div class="step-body">
+              <p class="text-gray-700 text-sm leading-relaxed mb-4">
+                이번에는 앞면이 나오면 <span class="step-ref-badge" id="step1RefBadge2">1단계 금액</span>, 뒷면이 나오면 <span class="amount-badge-red">0원</span>입니다. 주최자가 또 현금 봉투를 들고 왔습니다.
+              </p>
+              <div class="step-question">
+                이 게임을 안 하고 그냥 집에 가는 조건으로, 최소 얼마를 주면 포기하시겠습니까?
+              </div>
+              <div class="money-input-wrap">
+                <span class="won-icon">₩</span>
+                <input type="text" name="risk_step3" id="step3Input"
+                       placeholder="금액 입력  "
+                       oninput="formatMoney(this, 'step3Raw')" required>
+                <input type="hidden" id="step3Raw" name="risk_step3_raw">
+                <span class="unit">만 원</span>
               </div>
             </div>
           </div>
@@ -217,20 +396,19 @@
         </div>
         <div class="px-8 py-7">
 
-          <!-- 안내 박스 -->
-          <div class="bg-gray-50 border border-gray-200 rounded-xl p-6 flex flex-col sm:flex-row gap-5 items-start mb-6">
-            <div class="bg-blue-100 rounded-full p-4 flex items-center justify-center shrink-0 self-start">
+          <div class="flex gap-4 items-center mb-5">
+            <div class="bg-blue-100 rounded-full p-4 flex items-center justify-center shrink-0">
               <i class="fas fa-shopping-bag text-blue-500 text-2xl"></i>
             </div>
-            <p class="text-gray-800 text-sm leading-relaxed font-medium">
+            <p class="text-gray-700 text-sm leading-relaxed">
               이번 실험에서 구매를 가정하고 싶은 10~20만 원대의 상품을 적어주세요.
               상품을 입력하시면, 해당 상품을 구매한다고 가정한 경매 참여 화면으로 이동합니다.
             </p>
           </div>
 
-          <input type="text" name="product" required maxlength="200"
-                 placeholder="(예: 신발, 전자기기 액세서리, 의류, 생활용품 등)"
-                 class="field-input">
+          <input type="text" name="product" id="productInput" required maxlength="200"
+                placeholder="예: 에어팟, 나이키 에어포스, OO 콘서트 티켓"
+                class="field-input">
           <p class="text-xs text-gray-400 mt-3">
             입력한 상품 정보는 이후 실험 화면에서 구매 상황을 가정하기 위한 용도로만 사용되며,
             실제 상품 정보나 브랜드 노출에는 활용되지 않습니다.
@@ -241,7 +419,7 @@
 
       <!-- ── 제출 버튼 ── -->
       <div class="fade-up delay-4">
-        <button type="submit" class="btn-submit" id="submitBtn">
+        <button type="submit" class="btn-submit" id="submitBtn" disabled>
           0라운드(연습게임) 및 시나리오 시작
           <i class="fas fa-chevron-right text-sm"></i>
         </button>
@@ -251,43 +429,43 @@
   </div>
 
   <script>
-    function formatRisk(input) {
+    function formatMoney(input, hiddenId) {
       const raw = input.value.replace(/[^0-9]/g, '');
       input.value = raw ? Number(raw).toLocaleString() : '';
-      let hidden = document.getElementById('riskRaw');
-      if (!hidden) {
-        hidden = document.createElement('input');
-        hidden.type = 'hidden';
-        hidden.id = 'riskRaw';
-        hidden.name = 'expected_price_raw';
-        input.closest('.flex').appendChild(hidden);
+      document.getElementById(hiddenId).value = raw;
+
+      // 1단계 입력값을 배지에 반영
+      if (hiddenId === 'step1Raw') {
+        const display = raw ? Number(raw).toLocaleString() + '만 원' : '1단계 금액';
+        document.getElementById('step1RefBadge').textContent = display;
+        document.getElementById('step1RefBadge2').textContent = display;
       }
-      hidden.value = raw;
+
       checkReady();
     }
 
     function checkReady() {
-      const risk = document.getElementById('riskInput').value.trim();
-      const product = document.querySelector('input[name="product"]').value.trim();
+      const s1 = document.getElementById('step1Raw').value.trim();
+      const s2 = document.getElementById('step2Raw').value.trim();
+      const s3 = document.getElementById('step3Raw').value.trim();
+      const product = document.getElementById('productInput').value.trim();
       const btn = document.getElementById('submitBtn');
 
-      if (risk && product) {
+      if (s1 && s2 && s3 && product) {
+        btn.disabled = false;
         btn.style.background = '#4f46e5';
         btn.style.color = 'white';
         btn.style.cursor = 'pointer';
-        btn.disabled = false;
       } else {
+        btn.disabled = true;
         btn.style.background = '#e5e7eb';
         btn.style.color = '#9ca3af';
         btn.style.cursor = 'not-allowed';
-        btn.disabled = true;
       }
     }
 
-    // 상품 입력 감지
-    document.querySelector('input[name="product"]').addEventListener('input', checkReady);
+    document.getElementById('productInput').addEventListener('input', checkReady);
 
-    // 초기 상태 비활성화
     window.addEventListener('DOMContentLoaded', () => {
       const btn = document.getElementById('submitBtn');
       btn.disabled = true;

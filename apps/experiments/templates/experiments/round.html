@@ -170,9 +170,14 @@
           <p class="text-[15px] text-gray-600 mb-8 font-normal leading-relaxed">
             판매자가 제시한 즉시구매가로 바로 구매가 확정되며, 해당 회차가 종료됩니다.
           </p>
-          <div class="mt-auto border-t border-gray-100 pt-4 w-full">
-            <p class="text-xs text-gray-400 font-bold mb-1">판매자 제시 가격</p>
-            <p class="text-2xl font-black text-gray-900">{{ Ps|intcomma }}<span class="text-sm font-normal text-gray-500 ml-1">원</span></p>
+          <div class="mt-auto border-t border-gray-100 pt-4 w-full flex justify-between items-end">
+            <div>
+              <p class="text-xs text-gray-400 font-bold mb-1">판매자 제시 가격</p>
+              <p class="text-2xl font-black text-gray-900">{{ Ps|intcomma }}<span class="text-sm font-normal text-gray-500 ml-1">원</span></p>
+            </div>
+            <div class="bg-green-100 text-green-500 p-3 rounded-full group-hover:bg-green-500 group-hover:text-white transition-colors">
+              <i class="fas fa-arrow-right"></i>
+            </div>
           </div>
         </div>
 
