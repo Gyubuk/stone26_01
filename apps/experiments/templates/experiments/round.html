@@ -2,7 +2,7 @@
 {% load static %}
 {% load humanize %}
 
-{% block title %}{% if is_practice %}연습게임{% else %}실험 {{ exp_no }} · 라운드 {{ round_no }}{% endif %}{% endblock %}
+{% block title %}{% if is_practice %}연습게임{% else %}E{{ exp_no }}-{{ round_no }}{% endif %}{% endblock %}
 
 {% block extra_css %}
 <script src="https://cdn.tailwindcss.com"></script>
@@ -135,12 +135,13 @@
         </div>
         <div class="text-left md:text-right">
           <p class="text-xs text-gray-500 font-bold mb-1">
-            {% if is_practice %}연습게임 · ROUND{% else %}실험 {{ exp_no }} · ROUND{% endif %}
+            {% if is_practice %}연습게임 · ROUND{% else %}실험 라운드{% endif %}
           </p>
           <p class="font-extrabold text-[#5479F7] text-2xl md:text-3xl">
-            {{ round_no }} <span class="text-gray-400 text-lg font-medium">/ {{ max_round }}</span>
+            {% if is_practice %}{{ round_no }}{% else %}E{{ exp_no }}-{{ round_no }}{% endif %}
+            <span class="text-gray-400 text-lg font-medium">/ {{ max_round }}</span>
           </p>
-        </div>
+        </div>      
       </div>
 
       <!-- 프로그레스바 -->
@@ -150,8 +151,8 @@
                style="width: {% widthratio round_no max_round 100 %}%"></div>
         </div>
         <div class="flex justify-between text-[11px] text-gray-400 font-medium">
-          <span>Round 1</span>
-          <span>Round {{ max_round }} (종료)</span>
+          <span>{% if is_practice %}Round 1{% else %}E{{ exp_no }}-1{% endif %}</span>
+          <span>{% if is_practice %}Round {{ max_round }}{% else %}E{{ exp_no }}-{{ max_round }}{% endif %} (종료)</span>
         </div>
       </div>
 
