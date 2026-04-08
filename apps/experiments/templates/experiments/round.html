@@ -50,7 +50,7 @@
   </div>
 
   <!-- 전체 레이아웃 -->
-  <div class="w-full {% if is_practice %}max-w-[1500px]{% else %}max-w-4xl{% endif %} mx-auto px-4 mt-8 flex justify-center gap-6 xl:gap-10">
+  <div class="w-full {% if is_practice %}max-w-[1500px]{% else %}max-w-[1300px]{% endif %} mx-auto px-4 mt-8 flex justify-center gap-6 xl:gap-10">
 
     <!-- 좌측 가이드 (연습 전용, 데스크톱만) -->
     {% if is_practice %}
@@ -77,6 +77,24 @@
         </p>
       </div>
 
+    </div>
+    {% endif %}
+
+    <!-- 좌측 패널: 본 실험 전용 새 판매자 알림 -->
+    {% if not is_practice %}
+    <div class="hidden xl:flex flex-col w-[220px] shrink-0 pt-[120px]">
+      {% if is_new_seller %}
+      <div class="bg-amber-50 border-2 border-amber-300 rounded-2xl p-5 shadow-sm">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="bg-amber-400 text-white text-[11px] font-black px-2 py-0.5 rounded-full">NEW!</span>
+          <span class="text-amber-800 font-extrabold text-sm">판매자 변경</span>
+        </div>
+        <p class="text-[13px] text-amber-700 leading-relaxed">
+          <strong>새로운 판매자</strong>가 등장했습니다.<br><br>
+          지금 바로 새로운 결정을 진행해주세요!
+        </p>
+      </div>
+      {% endif %}
     </div>
     {% endif %}
 
@@ -141,18 +159,26 @@
             {% if is_practice %}{{ round_no }}{% else %}E{{ exp_no }}-{{ round_no }}{% endif %}
             <span class="text-gray-400 text-lg font-medium">/ {{ max_round }}</span>
           </p>
-        </div>      
+          {% if not is_practice and is_last_round %}
+          <span class="inline-block mt-1 text-[11px] font-bold text-red-500 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">
+            마지막 라운드!
+          </span>
+          {% endif %}
+        </div>
       </div>
 
       <!-- 프로그레스바 -->
       <div class="w-full mt-6 mb-8">
         <div class="w-full bg-gray-200 rounded-full h-[6px] mb-2">
-          <div class="progress-fill h-[6px] rounded-full bg-[#5479F7]"
-               style="width: {% widthratio round_no max_round 100 %}%"></div>
+          <div class="progress-fill h-[6px] rounded-full {% if not is_practice and is_last_round %}bg-red-400{% else %}bg-[#5479F7]{% endif %}"
+               style="width: {% if is_practice %}{% widthratio round_no max_round 100 %}{% else %}{{ progress_pct }}{% endif %}%"></div>
         </div>
-        <div class="flex justify-between text-[11px] text-gray-400 font-medium">
-          <span>{% if is_practice %}Round 1{% else %}E{{ exp_no }}-1{% endif %}</span>
-          <span>{% if is_practice %}Round {{ max_round }}{% else %}E{{ exp_no }}-{{ max_round }}{% endif %} (종료)</span>
+        <div class="flex justify-between text-[11px] font-medium">
+          <span class="text-gray-400">{% if is_practice %}Round 1{% else %}E{{ exp_no }}-1{% endif %}</span>
+          <span class="{% if not is_practice and is_last_round %}text-red-400 font-bold{% else %}text-gray-400{% endif %}">
+            {% if is_practice %}Round {{ max_round }}{% else %}E{{ exp_no }}-{{ max_round }}{% endif %}
+            {% if not is_practice and is_last_round %}(마지막 라운드!){% else %}(종료){% endif %}
+          </span>
         </div>
       </div>
 
@@ -287,6 +313,30 @@
       </div>
 
     </div>
+
+    <!-- 우측 진행 사이드바: 본 실험 전용 E1~E42 -->
+    {% if not is_practice %}
+    <div class="hidden xl:flex flex-col w-[180px] shrink-0">
+      <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden sticky top-20">
+        <div class="px-4 py-3 bg-gray-50 border-b border-gray-100">
+          <p class="text-xs font-bold text-gray-600">실험 진행 현황</p>
+          <p class="text-xs text-gray-400 mt-0.5">{{ exp_no }} / {{ max_exp }}</p>
+        </div>
+        <div class="p-2 space-y-0.5 max-h-[70vh] overflow-y-auto">
+          {% for item in exp_sidebar %}
+          <div class="flex items-center gap-2 px-2 py-1.5 rounded-lg {% if item.is_current %}bg-blue-50 border border-blue-200{% elif item.label %}bg-gray-50{% endif %}">
+            <span class="text-[11px] font-bold w-7 shrink-0 {% if item.is_current %}text-blue-600{% elif item.label %}text-gray-500{% else %}text-gray-300{% endif %}">
+              E{{ item.exp_no }}
+            </span>
+            <span class="text-[10px] truncate {% if item.is_current %}text-blue-500 font-bold{% else %}text-gray-400{% endif %}">
+              {% if item.is_current %}진행중{% elif item.label %}{{ item.label }}{% endif %}
+            </span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
 
     <!-- 우측 가이드 (연습 전용, 데스크톱만) -->
     {% if is_practice %}

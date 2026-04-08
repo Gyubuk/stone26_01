@@ -96,6 +96,43 @@ def round_view(request, exp_no, round_no):
         outcome='lose'
     ).aggregate(total=Sum('c'))['total'] or 0
 
+    # [LEFT 패널] 라운드 1일 때만 새 판매자 카드 표시
+    is_new_seller = (round_no == 1)
+
+    # [RIGHT 패널] 전체 실험 진행 현황 (사이드바용)
+    all_decisions = (
+        RoundDecision.objects
+        .filter(participant=participant)
+        .values('exp_no', 'round_no', 'decision_type', 'outcome')
+        .order_by('exp_no', 'round_no')
+    )
+    exp_rounds = {}
+    for d in all_decisions:
+        eno = d['exp_no']
+        if eno not in exp_rounds:
+            exp_rounds[eno] = []
+        exp_rounds[eno].append(d)
+
+    exp_sidebar = []
+    for i in range(1, MAX_EXP + 1):
+        rounds = exp_rounds.get(i, [])
+        label = None
+        if rounds:
+            won = next((r for r in rounds if r['outcome'] in ['bought', 'win']), None)
+            if won:
+                label = '즉시구매' if won['decision_type'] == 'buy' else '입찰'
+            elif len(rounds) >= MAX_ROUND:
+                label = '강제구매'
+        exp_sidebar.append({
+            'exp_no': i,
+            'is_current': i == exp_no,
+            'label': label,
+        })
+
+    # [프로그레스바] round 1 → 0%, round MAX_ROUND → 100%
+    progress_pct = int((round_no - 1) / (MAX_ROUND - 1) * 100) if MAX_ROUND > 1 else 100
+    is_last_round = (round_no == MAX_ROUND)
+
     context = {
         'no_bootstrap': True,
         'is_practice': False,
@@ -109,6 +146,10 @@ def round_view(request, exp_no, round_no):
         'step': STEP,
         'participant': participant,
         'accumulated_fee': accumulated_fee,
+        'is_new_seller': is_new_seller,
+        'exp_sidebar': exp_sidebar,
+        'progress_pct': progress_pct,
+        'is_last_round': is_last_round,
     }
     return render(request, 'experiments/round.html', context)
 
@@ -350,7 +391,7 @@ def practice_round_view(request, round_no=1):
         return redirect('core:home')
 
     # 연습 라운드 범위 보정
-    round_no = max(1, min(round_no, 5))
+    round_no = max(1, min(round_no, MAX_ROUND))
 
     # 유찰 시 최저입찰가 누적 (세션 활용)
     practice_min_bid = request.session.get('practice_min_bid', PRACTICE_K)
@@ -360,7 +401,7 @@ def practice_round_view(request, round_no=1):
         'is_practice': True,
         'exp_no':      0,               # 연습 = 0번 실험
         'round_no':    round_no,
-        'max_round':   5,
+        'max_round':   MAX_ROUND,
         'Ps':          PRACTICE_PS,
         'k':           practice_min_bid,
         'c':           PRACTICE_C,
@@ -411,7 +452,7 @@ def practice_choice(request):
 
         # 연습용 낙찰 판정: PS의 90% 이상이면 낙찰 (단순 기준)
         accept_threshold = int(PRACTICE_PS * 0.90)
-        is_last_round    = (round_no >= 5)
+        is_last_round    = (round_no >= MAX_ROUND)
 
         if bid_amount >= accept_threshold:
             outcome    = 'win'
@@ -466,7 +507,7 @@ def practice_result_view(request):
     round_no      = result['round_no']
     outcome       = result['outcome']
     acquired      = outcome in ('bought', 'win')
-    is_forced_buy = result.get('is_forced_buy', False)
+    is_forced_buy = (outcome == 'lose' and round_no >= MAX_ROUND)
 
     accumulated_fee = request.session.get('practice_accumulated_fee', 0)
 
@@ -485,7 +526,7 @@ def practice_result_view(request):
     else:
         request.session['practice_accumulated_fee'] = 0
 
-    if not acquired and not is_forced_buy and round_no < 5:
+    if not acquired and not is_forced_buy and round_no < MAX_ROUND:
         next_round = round_no + 1
         retry_url  = reverse('experiments:practice_round', kwargs={'round_no': next_round})
     else:
@@ -498,7 +539,7 @@ def practice_result_view(request):
         'decision':           PracticeDecision(result),
         'exp_no':             0,
         'round_no':           round_no,
-        'max_round':          5,
+        'max_round':          MAX_ROUND,
         'accumulated_fee':    accumulated_fee,
         'total_paid':         total_paid,
         'is_forced_buy':      is_forced_buy,
