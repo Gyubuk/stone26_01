@@ -16,7 +16,12 @@
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    
+
+    <!-- Tailwind CSS (빌드된 정적 파일) -->
+    {% if no_bootstrap %}
+    <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
+    {% endif %}
+
     {% block extra_css %}{% endblock %}
 </head>
 <body>
