@@ -6,6 +6,14 @@ module.exports = {
     './apps/**/static/**/*.js',
     './static/**/*.js',
   ],
+  safelist: [
+    'xl:flex',
+    'xl:block',
+    'xl:hidden',
+    'lg:flex',
+    'lg:block',
+    'lg:hidden',
+  ],
   theme: {
     extend: {},
   },
